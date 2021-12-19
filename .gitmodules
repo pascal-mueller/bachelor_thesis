@@ -1,0 +1,3 @@
+[submodule "MLGWSC/mock"]
+	path = MLGWSC/mock
+	url = git@github.com:gwastro/ml-mock-data-challenge-1.git

@@ -1,0 +1,58 @@
+% !TEX options=--shell-escape
+\title{Zusammenfasung - Physik 1}
+\author{
+        Pascal Müller [pamuelle@student.ethz.ch]
+}
+\date{\today}
+
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[parfill]{parskip}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\title{Theory}
+
+\begin{document}
+\maketitle
+
+\section{Signal Processing}
+\paragraph{Matched Filtering} Detect the presence of a template in the
+unknown signal. Want to maximize SNR. Basically inner product.
+
+\paragraph{SNR}
+\[
+  \text{SNR} = \frac{P_{signal}}{P_{noise}} 
+  \Rightarrow \text{SNR} = \frac{E[S^2]}{E[N^2]}
+\]
+
+
+\section{Bayesian Statistics}
+\paragraph{Parameters} are treated as random variables that can be described with
+probability distributions. Often denoted by $\theta$
+
+\paragraph{Probability} is our degree of belief.
+
+\paragraph{Prior Distribution for $\theta$}  A prior distribution is a
+\textbf{mathematical expression of our belief} about the distribution of the
+parameter. E.g. the prior distribution for $\theta$ might be uniform.
+
+\paragraph{Likelihood Functions} Probability distributions quantify the
+probability of the data for a given parameter value (that is, $P(y|\theta))$,
+whereas a likelihood function quantifies the likelihood of a parameter value
+given the data (that is, $L(\theta|y))$. The functional form is the same for
+both, and the notation is often used interchangeably (that is, $P(y|\theta) =
+L(\theta|y))$. E.g. likelihood function might be binomial.
+
+\paragraph{Posterior Distribution} Posterior = Prior * Likelihood
+\[
+  P(\theta | y) = P(\theta) * P(y | \theta)
+\]
+
+\section{Bayesian Inference}
+\paragraph{Bayes Rule}
+\[
+  P(\theta | x) = \frac{P(x|\theta) \cdot P(\theta)}{P(x) }
+\]
+
+\end{document}

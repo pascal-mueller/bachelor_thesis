@@ -1,0 +1,5 @@
+data
+*.hdf
+venv
+__pycache__
+segments.csv

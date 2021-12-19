@@ -1,0 +1,72 @@
+% !TEX options=--shell-escape
+\title{Zusammenfasung - Physik 1}
+\author{
+        Pascal Müller [pamuelle@student.ethz.ch]
+}
+\date{\today}
+
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[parfill]{parskip}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\title{Classification and Parameter Estimation of Gravitational Waves from
+Binary-Black-Hole, Binary-Neutron-Star and Black-Hole-Neutron-Star Mergers in
+Real LIGO Data using Deep Learning}
+
+\begin{document}
+\maketitle
+
+\paragraph{Problem:}
+Gravitational wave (GW) detection currently employs computationally expensive
+methods for GW signal classification and parameter estimation. This leads to
+delayed public alerts for new detections, making prompt subsequent
+multimessenger follow-ups unfeasible. \\
+
+The need for real-time detection of GW signals led to an increase in the
+application of deep learning (DL) methods to classify GW signals and estimate
+its parameters. Currently all detected GW signals are sourced by compact binary
+coalescences (CBC). In particular: Binary neutron stars (BNS), binary black
+holes (BBH) and neutron star - black hole (BHNS) merger. \\
+
+George and Huerta showed \cite{BBHmerger} that not only can Convolutional Neural
+Networks (CNN) be used to detect and estimate the parameters of GW signals from
+BBH mergers in real LIGO noise (including real glitches) but also that CNNs
+achieve performance comparable to matched-filtering methods. Palmen G. Krastev
+showed \cite{NSmerger} that the same can be done for GW signals from BNS merger.
+\\
+
+Similar work for BHNS merger as well as research using a unified DL framework
+for analyzing BNS and BHNS merger simultaneously is said to be conducted by
+Palmen G. Krastev \cite{NSmerger} in future works.
+
+\paragraph{Task:}
+The task of this thesis is to create a synergy between GW physics and deep
+learning. In particular the task will be to classify and estimate the parameters
+\footnote{component masses ($m_1, m_2$), spin $(\mathbf{\hat{s}_1},
+\mathbf{\hat{s}_2})$ and orbital eccentricity $e$} of GW signals from BBH, BNS
+and  and BHNS mergers in real LIGO data using a (deep) neural network approach.
+The focus will be on real-world application i.e. the neural network should also
+correctly classify glitches as noise. Furthermore the possibility and usefulness
+of a unified deep learning framework should also be researched. \\
+
+The estimation of additional parameters such as for example the sky location,
+inclination or tidal deformabilities might also pose as an additional research
+goal.
+
+\begin{thebibliography}{9}
+\bibitem{NSmerger}
+Plamen G. Krastev, Kiranjyot Gill, V. Ashley Villar, Edo Berger.
+\href{https://arxiv.org/abs/2012.13101}
+{\textit{Detection and Parameter Estimation of Gravitational Waves from Binary
+Neutron-Star Mergers in Real LIGO Data using Deep Learning}}
+
+\bibitem{BBHmerger}
+Daniel George, E.A. Huerta.
+\href{https://www.sciencedirect.com/science/article/pii/S0370269317310390}
+{\textit{Deep Learning for real-time gravitational wave detection and parameter
+estimation: Results with Advanced LIGO data}}
+\end{thebibliography}
+
+\end{document}
