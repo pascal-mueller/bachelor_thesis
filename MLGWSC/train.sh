@@ -1,6 +1,6 @@
 #!/bin/bash
-input_dir=data/training_data
-output_dir=data/trained_model
+input_dir=../data/test_data
+output_dir=../data/training_output
 rm $output_dir/*hdf
 ./mock/examples/example_torch.py \
 $input_dir/background-file.hdf $output_dir/background-events.hdf \
@@ -9,7 +9,7 @@ $input_dir/background-file.hdf $output_dir/background-events.hdf \
 --training-samples 5 5 \
 --validation-samples 5 5 \
 --train \
---weights data/trained_model/weights.pt
+--weights ../data/trained_model/weights.pt
 ./mock/examples/example_torch.py \
 $input_dir/foreground-file.hdf $output_dir/foreground-events.hdf \
 --verbose \
@@ -17,4 +17,4 @@ $input_dir/foreground-file.hdf $output_dir/foreground-events.hdf \
 --training-samples 10 10 \
 --validation-samples 10 10 \
 --train \
---weights data/trained_model/weights.pt
+--weights ../data/trained_model/weights.pt

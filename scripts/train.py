@@ -105,7 +105,7 @@ if __name__=='__main__':
         best_loss = 1.0e10 # Impossibly bad value
         
         # Read samples dataset
-        samplesDS = SamplesDataset('../data/train_eval_set.hdf',
+        samplesDS = SamplesDataset(args.samples_file,
             device=args.device)
 
         # Make a 80/20 split for training/eval data

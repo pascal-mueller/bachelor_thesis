@@ -10,8 +10,8 @@ class SamplesDataset(torch.utils.data.Dataset):
         self.file = h5py.File(filename, 'r')
 
         # Init first
-        self.samples = self.file['signal+noise_waveforms']
-        self.labels = self.file['signal+noise_waveforms_labels']
+        self.samples = self.file['samples']
+        self.labels = self.file['samples_labels']
 
     def __len__(self):
         return len(self.samples)

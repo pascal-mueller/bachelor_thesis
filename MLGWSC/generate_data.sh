@@ -1,5 +1,5 @@
 #!/bin/bash
-dir=data/training_data
+dir=../data/training_data
 ./mock/generate_data.py \
 --data-set 1 \
 --output-injection-file $dir/injection-file.hdf \
