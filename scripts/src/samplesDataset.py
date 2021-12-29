@@ -1,6 +1,6 @@
 import h5py
+import numpy as np
 import torch
-
 
 class SamplesDataset(torch.utils.data.Dataset):
     def __init__(self, filename, device='cuda'):
@@ -19,13 +19,11 @@ class SamplesDataset(torch.utils.data.Dataset):
     def __getitem__(self, i):
         sample = self.samples[i]
         label = self.labels[i]
-
+        
         if label == 1:
             label = [1.0, 0.0] # noise + signal
         else:
             label = [0.0, 1.0] # pure noise
 
-        label = torch.tensor(label, device=self.device)
-        sample = torch.tensor(sample, device=self.device)
+        return np.array(sample), np.array(label)
 
-        return sample.unsqueeze(0), label.unsqueeze(0)

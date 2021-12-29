@@ -19,29 +19,28 @@ def train(TrainDL, network, loss_fn, optimizer):
     # i_batch describes which batch we currently work through.
     # (samples, labels) is the actual data
     for i_batch, (samples, labels) in enumerate(TrainDL):
-        print(samples)
-        quit()
+        # Send data to device
+        # [N, num_channels, length_data]
+        samples = samples.unsqueeze(1)
+        labels = labels.unsqueeze(1)
+        samples = samples.to(args.device)
+        labels = labels.to(args.device)
+
         # Reset gradients TODO: Why?
         optimizer.zero_grad()
 
         # Compute prediction
         # samples[0] is a pytorch tensor of shape [1, 2048]
         labels_pred = network(samples.float())
-        
+
         # Get weights used for given sample
         # TODO: Check weights
         weights = labels[:,0,0]
         weights[weights==1.0] = 0.1
         weights[weights==0.0] = 1.0
-        
-        loss_fn2 = reg_BCELoss(dim=2)
 
         # Compute loss
-        loss_batch = loss_fn(labels_pred, labels)
-        loss_batch2 = loss_fn2(labels_pred, labels)
-        print(loss_batch)
-        print(loss_batch2)
-        quit()
+        loss_batch = loss_fn(labels_pred, labels.float())
         loss += loss_batch.item() # Get actual number
 
         # Backpropagation
@@ -53,6 +52,31 @@ def train(TrainDL, network, loss_fn, optimizer):
         # Make a step in the optimizer
         optimizer.step()
     
+    return loss
+
+def evaluation(EvalDL, network, loss_fn):
+    # Put model into evaluation mode
+    network.eval()
+
+    # Variables
+    loss = 0.0
+
+    with torch.no_grad(): # TODO: Why use this?
+        for i_batch, (samples, labels) in enumerate(EvalDL):
+            # Send data to device
+            # [N, num_channels, length_data]
+            samples = samples.unsqueeze(1)
+            labels = labels.unsqueeze(1)
+            samples = samples.to(args.device)
+            labels = labels.to(args.device)
+
+            # Get prediction
+            labels_pred = network(samples.float())
+            
+            # Compute loss
+            loss_batch = loss_fn(labels_pred, labels.float())
+            loss += loss_batch.item()
+
     return loss
 
 if __name__=='__main__':
@@ -100,8 +124,8 @@ if __name__=='__main__':
         beta2 = 0.999
         betas = (beta1, beta2)
         eps = 1e-8
-        batch_size = 3
-        epochs = 20
+        batch_size = 64 
+        epochs = 300 
         best_loss = 1.0e10 # Impossibly bad value
         
         # Read samples dataset
@@ -117,15 +141,16 @@ if __name__=='__main__':
         
         # Get Dataloaders
         TrainDL = torch.utils.data.DataLoader(TrainDS, batch_size=batch_size,
-            shuffle=False)
+            pin_memory=True, shuffle=False)
         ValidDL = torch.utils.data.DataLoader(ValidDS, batch_size=batch_size,
-            shuffle=False)
+            pin_memory=True, shuffle=False)
         
         n_train = len(TrainDS)
         n_valid = len(ValidDS)
 
         # Get loss function
-        loss_fn = reg_BCELoss(dim=2, reduction = 'none')
+        #loss_fn = reg_BCELoss(dim=2, reduction = 'none')
+        loss_fn = reg_BCELoss(dim=2)
 
         # Get optimizer # TODO: arguments randomyl chosen
         optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate,
@@ -134,6 +159,7 @@ if __name__=='__main__':
         # Epochs
         print("\nEpoch  |  Training Loss  |  Evaluation Loss")
         print("-------------------------------------------")
+
         for t in range(epochs):
             # Train the NN
             training_loss = train(TrainDL, network, loss_fn, optimizer)
@@ -144,7 +170,7 @@ if __name__=='__main__':
             evaluation_loss /= n_valid
             
             # Print the losses
-            info_string = "   %i   |      %.2f      |      %.2f" % (t, training_loss, evaluation_loss)
+            info_string = "   %i   |      %.8f      |      %.8f" % (t, training_loss, evaluation_loss)
             print(info_string)
             
             # Store weights
