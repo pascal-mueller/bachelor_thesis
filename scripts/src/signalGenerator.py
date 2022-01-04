@@ -3,13 +3,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class SignalGenerator:
-    def __init__(self, file):
-        self.dataset = file['signals']
+    def __init__(self, file=None):
+        if file != None:
+            self.dataset = file['signals']
+
+        self.file = file 
         self.detector = pycbc.detector.Detector('H1')
         self.duration = 1.25 # Or 1.25s?
         self.sample_rate = 2048
         self.rng = np.random.default_rng()
-        self.signals = None
 
     def generate(self, params):
         strains = np.zeros((len(params), 2560)) 
@@ -72,5 +74,8 @@ class SignalGenerator:
         idx = params[0]['index']
         k = len(params)
 
-        self.dataset[idx : idx + k] = strains
+        if self.file != None:
+            self.dataset[idx : idx + k] = strains
+        else:
+            return strains
 

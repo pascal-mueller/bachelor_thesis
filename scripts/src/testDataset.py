@@ -4,7 +4,6 @@ import torch
 
 class TestDataset(torch.utils.data.Dataset):
     def __init__(self, filename, stride=0.1, detector='H1', device='cuda'):
-        print("init")
         self.device = device
         self.detector = detector
         self.sample_rate = 2048

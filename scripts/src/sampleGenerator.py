@@ -20,11 +20,10 @@ class SampleGenerator:
             index = param['index']
             idx_noise = param['idx_noise']
             idx_signal = param['idx_signal']
-
+            
             # Pure noise
             if idx_signal == None:
                 noise = self.noise_ds[idx_noise]
-                
                 # Given: len(noise) = 2560 i.e. 1.25s
                 # Need: 1s
                 # => We cut 1s out of the 1.25s around the middle.
@@ -50,6 +49,7 @@ class SampleGenerator:
                 signal = pycbc.types.TimeSeries(signal,
                         delta_t = 1.0 / self.sample_rate, dtype=np.float64)
 
+                # Scale SNR and inject
                 sample = self.SNR_scale(signal, noise)
 
                 # Remember: Whiten turns 1.25s into 1s.
@@ -60,7 +60,7 @@ class SampleGenerator:
                 #self.labels_ds[index] = 1
                 samples[i] = sample
                 labels[i] = 1
-        
+
         idx = params[0]['index']
         k = len(params)
         self.samples_ds[idx : idx + k] = samples
