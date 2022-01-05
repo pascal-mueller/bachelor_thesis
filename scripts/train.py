@@ -22,7 +22,6 @@ def train(TrainDL, network, loss_fn, optimizer):
         # Send data to device
         # [N, num_channels, length_data]
         samples = samples.unsqueeze(1)
-        labels = labels.unsqueeze(1)
         samples = samples.to(args.device)
         labels = labels.to(args.device)
 
@@ -33,13 +32,19 @@ def train(TrainDL, network, loss_fn, optimizer):
         # samples[0] is a pytorch tensor of shape [1, 2048]
         labels_pred = network(samples.float())
 
+        # Correct dim of labels
+        labels_pred = labels_pred.squeeze(1)
+
         # Get weights used for given sample
         # TODO: Check weights
-        weights = labels[:,0,0]
-        weights[weights==1.0] = 0.1
-        weights[weights==0.0] = 1.0
+        labels_signal = labels[:,0]
+        weights = torch.zeros_like(labels)
+        weights[labels_signal==1.0] = 0.1
+        weights[labels_signal==0.0] = 1.0
 
         # Compute loss
+
+        loss_fn.weight = weights
         loss_batch = loss_fn(labels_pred, labels.float())
         loss += loss_batch.item() # Get actual number
 
@@ -66,14 +71,24 @@ def evaluation(EvalDL, network, loss_fn):
             # Send data to device
             # [N, num_channels, length_data]
             samples = samples.unsqueeze(1)
-            labels = labels.unsqueeze(1)
             samples = samples.to(args.device)
             labels = labels.to(args.device)
 
             # Get prediction
             labels_pred = network(samples.float())
             
+            # Correct dim of labels
+            labels_pred = labels_pred.squeeze(1)
+            
+            # Get weights used for given sample
+            # TODO: Check weights
+            labels_signal = labels[:,0]
+            weights = torch.zeros_like(labels)
+            weights[labels_signal==1.0] = 0.1
+            weights[labels_signal==0.0] = 1.0
+
             # Compute loss
+            loss_fn.weight = weights
             loss_batch = loss_fn(labels_pred, labels.float())
             loss += loss_batch.item()
 
@@ -125,7 +140,7 @@ if __name__=='__main__':
         betas = (beta1, beta2)
         eps = 1e-8
         batch_size = 64 
-        epochs = 300 
+        epochs = 200
         best_loss = 1.0e10 # Impossibly bad value
         
         # Read samples dataset
