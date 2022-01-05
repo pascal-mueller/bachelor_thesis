@@ -12,6 +12,8 @@ class SampleGenerator:
         self.samples_ds = file['samples']
         self.labels_ds = file['samples_labels']
 
+        self.snr = []
+
     def generate(self, params):
         samples = np.zeros((len(params), 2048))
         labels = np.zeros(len(params))
@@ -43,11 +45,13 @@ class SampleGenerator:
             else:
                 noise = self.noise_ds[idx_noise]
                 signal = self.signals_ds[idx_signal]
+                
 
                 noise = pycbc.types.TimeSeries(noise,
                         delta_t = 1.0 / self.sample_rate, dtype=np.float64)
                 signal = pycbc.types.TimeSeries(signal,
                         delta_t = 1.0 / self.sample_rate, dtype=np.float64)
+                              
 
                 # Scale SNR and inject
                 sample = self.SNR_scale(signal, noise)
@@ -63,6 +67,37 @@ class SampleGenerator:
 
         idx = params[0]['index']
         k = len(params)
+        
+        """
+        import matplotlib.pyplot as plt
+        fig, axs = plt.subplots(len(params), 3)
+        fig.suptitle("hi")
+        k = 0
+
+        para = params.copy()
+        for (i, param) in enumerate(para):
+            index = param['index']
+            idx_noise = param['idx_noise']
+            idx_signal = param['idx_signal']
+            
+            if idx_signal != None:
+                signal = self.signals_ds[idx_signal]
+                k = k + 1
+                print("scaled with ", self.snr[k-1])
+            else:
+                signal = np.zeros(2560)
+
+            noise = self.noise_ds[idx_noise]
+            
+            t = range(len(noise))
+            axs[i][0].plot(t, noise)
+            axs[i][1].plot(t, signal*self.snr[k-1])
+            axs[i][2].plot(range(len(samples[i])), samples[i])
+
+        import time
+        plt.savefig(f"plot-{time.time()}.png")
+        """
+
         self.samples_ds[idx : idx + k] = samples
         self.labels_ds[idx : idx + k] = labels
 
@@ -78,9 +113,13 @@ class SampleGenerator:
                 low_frequency_cutoff = 18.0)
         network_snr = np.sqrt(foo)
         target_snr = self.rng.uniform(5.0, 15.0)
+
+        #print("network_snr=", network_snr, " target_snr=", target_snr, "ratio=", target_snr/network_snr)
         
         # TODO: Understand snr scaling here
-        sample = (noise + signal.numpy()) * (target_snr/network_snr)
+        sample = noise + signal.numpy() * (target_snr/network_snr)
+
+        self.snr.append(target_snr/network_snr)
     
         return sample
     
