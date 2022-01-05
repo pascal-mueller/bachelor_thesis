@@ -98,7 +98,7 @@ if __name__=='__main__':
 
     # Slaves
     else:
-        with FileManager(filename, slaves, N_noise, N_signal, N_samples) as file:
+        with FileManager(filename, N_noise, N_signal, N_samples, comm=slaves) as file:
             #
             # Generate Signals
             #
