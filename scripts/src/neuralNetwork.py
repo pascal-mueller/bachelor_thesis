@@ -33,7 +33,7 @@ class NeuralNetwork(nn.Module):
         self.dropout1 = nn.Dropout(p=0.5) #TODO: Decide p
         
         self.linear2 = nn.Linear(64, 64)
-        self.dropout2 = nn.Dropout(p=0.2) #TODO: Decide p
+        self.dropout2 = nn.Dropout(p=0.5) #TODO: Decide p
 
         self.linear3 = nn.Linear(64, 2)
         self.softmax = nn.Softmax(dim=1)
