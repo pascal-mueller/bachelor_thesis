@@ -3,7 +3,10 @@ import pycbc.distributions
 
 class SignalSpace:
     def __init__(self, N, stride):
-        self.rng = np.random.default_rng(33)
+        # Set the seed for self.rng and self.sky_location_dist
+        np.random.seed(2854)
+        self.rng = np.random.default_rng()
+        self.sky_location_dist = pycbc.distributions.sky_location.UniformSky()
         
         # Amount of samples
         self.N = N
@@ -20,15 +23,16 @@ class SignalSpace:
 
         for i in range(N):
             # Create distributions
+            # TODO: If only 1 detector, can probably set all angles to 0.
+            # Check paper.
             angles = self.rng.uniform(0.0, 2 * np.pi, 3)
-            sky_location_dist = pycbc.distributions.sky_location.UniformSky()
             masses = self.rng.uniform(10.0, 50.0, 2)
 
             # Draw parameters
-            declination, right_ascension = sky_location_dist.rvs()[0]
+            declination, right_ascension = self.sky_location_dist.rvs()[0]
             
             waveform_kwargs = {}
-            waveform_kwargs['approximant'] = 'IMRPhenomD'
+            waveform_kwargs['approximant'] = 'SEOBNRv4_opt'
             waveform_kwargs['delta_t'] = 1.0 / self.sample_rate
             waveform_kwargs['f_lower'] = 18.0
             waveform_kwargs['mass1'] = max(masses)
