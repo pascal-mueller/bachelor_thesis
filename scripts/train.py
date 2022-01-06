@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from argparse import ArgumentParser
+from tqdm import tqdm
 
 from src.neuralNetwork import NeuralNetwork
 from src.samplesDataset import SamplesDataset
@@ -18,7 +19,8 @@ def train(TrainDL, network, loss_fn, optimizer):
     # We put the TrainDL iterator in an enumerate to get the key/value pair.
     # i_batch describes which batch we currently work through.
     # (samples, labels) is the actual data
-    for i_batch, (samples, labels) in enumerate(TrainDL):
+    iterable = tqdm(TrainDL, desc=f"Training Network")
+    for i_batch, (samples, labels) in enumerate(iterable):
         # Send data to device
         # [N, num_channels, length_data]
         samples = samples.unsqueeze(1)
@@ -59,7 +61,7 @@ def train(TrainDL, network, loss_fn, optimizer):
     
     return loss
 
-def evaluation(EvalDL, network, loss_fn):
+def evaluation(ValidDL, network, loss_fn):
     # Put model into evaluation mode
     network.eval()
 
@@ -67,7 +69,8 @@ def evaluation(EvalDL, network, loss_fn):
     loss = 0.0
 
     with torch.no_grad(): # TODO: Why use this?
-        for i_batch, (samples, labels) in enumerate(EvalDL):
+        iterable = tqdm(ValidDL, desc=f"Validate trained Network")
+        for i_batch, (samples, labels) in enumerate(iterable):
             # Send data to device
             # [N, num_channels, length_data]
             samples = samples.unsqueeze(1)
@@ -139,13 +142,12 @@ if __name__=='__main__':
         beta2 = 0.999
         betas = (beta1, beta2)
         eps = 1e-8
-        batch_size = 64 
-        epochs = 200
+        batch_size = 256
+        epochs = 10
         best_loss = 1.0e10 # Impossibly bad value
         
         # Read samples dataset
-        samplesDS = SamplesDataset(args.samples_file,
-            device=args.device)
+        samplesDS = SamplesDataset(args.samples_file, device=args.device)
 
         # Make a 80/20 split for training/eval data
         k = len(samplesDS)
@@ -161,7 +163,7 @@ if __name__=='__main__':
             pin_memory=True, shuffle=False)
         
         n_train = len(TrainDS)
-        n_valid = len(ValidDS)
+        n_valid = len(ValidDL)
 
         # Get loss function
         #loss_fn = reg_BCELoss(dim=2, reduction = 'none')
@@ -172,26 +174,28 @@ if __name__=='__main__':
                 betas=betas, eps=eps)
         
         # Epochs
-        print("\nEpoch  |  Training Loss  |  Evaluation Loss")
+        print("\nEpoch  |  Training Loss  |  Validation Loss")
         print("-------------------------------------------")
-
+        
+        i = 0
         for t in range(epochs):
             # Train the NN
             training_loss = train(TrainDL, network, loss_fn, optimizer)
-            training_loss /= n_train
+            #training_loss /= n_train
 
-            # Evaluate on unseen data
+            # Validate on unseen data
             evaluation_loss = evaluation(ValidDL, network, loss_fn)
-            evaluation_loss /= n_valid
+            #evaluation_loss /= n_valid
             
             # Print the losses
-            info_string = "   %i   |      %.8f      |      %.8f" % (t, training_loss, evaluation_loss)
+            info_string = "   %i   |      %.12f      |      %.12f" % (t, training_loss, evaluation_loss)
             print(info_string)
             
             # Store weights
             if evaluation_loss < best_loss:
                 best_loss = evaluation_loss
-                torch.save(network.state_dict(), 'best_weights.pt')
-                print("Best weights stored in best_weights.pt")
+                torch.save(network.state_dict(), f"../data/best_weights/{i}.pt")
+                print(f"Best weights stored in ../data/best_weights/{i}.pt")
+                i += 1
 
         print("Done with training!\n")
