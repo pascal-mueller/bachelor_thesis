@@ -17,32 +17,8 @@ from src.samplesDataset import SamplesDataset
 from src.singleTestDataset import SingleTestDataset 
 
 if __name__=='__main__':
+    np.random.seed(80)
     torch.set_printoptions(precision=25)
-    """
-    filename = '../data/test_data_single/test_data_single.hdf5'
-    N_noise = 10
-    N_signal = 10
-    N_samples = 1
-    stride = 1
-    with FileManager(filename, N_noise, N_signal, N_samples) as file:
-        # Generate signal
-        signal_space = SignalSpace(N_signal, stride)
-        signal_gen = SignalGenerator(file)
-        signal_params = next(signal_space)
-        signal_gen.generate(signal_params)
-        
-        # Generate noise
-        noise_space = NoiseSpace(N_noise, stride)
-        noise_gen = NoiseGenerator(file)
-        noise_params = next(noise_space)
-        noise_gen.generate(noise_params)
-
-        # Generate sample
-        sample_space = SampleSpace(N_noise, N_signal, N_samples, stride)
-        sample_gen = SampleGenerator(file)
-        for sample_param in sample_space:
-            sample_gen.generate(sample_param)
-    """
     duration = 10
     sample_rate = 2048
     device = 'cpu'

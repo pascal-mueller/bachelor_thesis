@@ -1,4 +1,7 @@
 import torch
+from torch import nn
+import time
+import matplotlib.pyplot as plt
 import numpy as np
 from argparse import ArgumentParser
 from tqdm import tqdm
@@ -25,7 +28,6 @@ def train(TrainDL, network, loss_fn, optimizer):
         # [N, num_channels, length_data]
         samples = samples.unsqueeze(1)
         samples = samples.to(args.device)
-        labels = labels.to(args.device)
 
         # Reset gradients TODO: Why?
         optimizer.zero_grad()
@@ -39,22 +41,28 @@ def train(TrainDL, network, loss_fn, optimizer):
 
         # Get weights used for given sample
         # TODO: Check weights
-        labels_signal = labels[:,0]
-        weights = torch.zeros_like(labels)
-        weights[labels_signal==1.0] = 0.1
-        weights[labels_signal==0.0] = 1.0
+        #labels_signal = labels[:,0]
+        #weights = torch.zeros_like(labels)
+        #weights[labels_signal==1.0] = 0.1
+        #weights[labels_signal==0.0] = 1.0
 
         # Compute loss
 
-        loss_fn.weight = weights
-        loss_batch = loss_fn(labels_pred, labels.float())
+        #loss_fn.weight = weights
+        # First class: [1.0, 0.0] noise + signal
+        # Second class: [0.0, 1.0] pure noise
+        labels = labels[:,1]
+        labels = labels.type(torch.LongTensor)
+        labels = labels.to(args.device)
+
+        loss_batch = loss_fn(labels_pred, labels)
         loss += loss_batch.item() # Get actual number
 
         # Backpropagation
         loss_batch.backward()
 
         # Clip gradients to make convergence somewhat easier # TODO: More research
-        torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=100)
+        #torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=100)
 
         # Make a step in the optimizer
         optimizer.step()
@@ -75,24 +83,28 @@ def evaluation(ValidDL, network, loss_fn):
             # [N, num_channels, length_data]
             samples = samples.unsqueeze(1)
             samples = samples.to(args.device)
-            labels = labels.to(args.device)
 
+            
+            labels = labels[:,1]
+            labels = labels.type(torch.LongTensor)
+            labels = labels.to(args.device)
+           
             # Get prediction
             labels_pred = network(samples.float())
-            
+
             # Correct dim of labels
             labels_pred = labels_pred.squeeze(1)
-            
+
             # Get weights used for given sample
             # TODO: Check weights
-            labels_signal = labels[:,0]
-            weights = torch.zeros_like(labels)
-            weights[labels_signal==1.0] = 0.1
-            weights[labels_signal==0.0] = 1.0
+            #labels_signal = labels[:,0]
+            #weights = torch.zeros_like(labels)
+            #weights[labels_signal==1.0] = 0.1
+            #weights[labels_signal==0.0] = 1.0
 
             # Compute loss
-            loss_fn.weight = weights
-            loss_batch = loss_fn(labels_pred, labels.float())
+            #loss_fn.weight = weights
+            loss_batch = loss_fn(labels_pred, labels)
             loss += loss_batch.item()
 
     return loss
@@ -137,13 +149,14 @@ if __name__=='__main__':
     if args.train == True:
         print("Training network...")
         # Parameters
-        learning_rate = 1e-5 
+        #learning_rate = 1e-5 
+        learning_rate = 0.0001
         beta1 = 0.9
         beta2 = 0.999
         betas = (beta1, beta2)
         eps = 1e-8
-        batch_size = 256
-        epochs = 10
+        batch_size = 64
+        epochs = 150
         best_loss = 1.0e10 # Impossibly bad value
         
         # Read samples dataset
@@ -158,37 +171,47 @@ if __name__=='__main__':
         
         # Get Dataloaders
         TrainDL = torch.utils.data.DataLoader(TrainDS, batch_size=batch_size,
-            pin_memory=True, shuffle=False)
+            pin_memory=True, shuffle=True)
         ValidDL = torch.utils.data.DataLoader(ValidDS, batch_size=batch_size,
-            pin_memory=True, shuffle=False)
+            pin_memory=True, shuffle=True)
         
-        n_train = len(TrainDS)
+        n_train = len(TrainDL)
         n_valid = len(ValidDL)
+
+        print(n_train, n_valid)
 
         # Get loss function
         #loss_fn = reg_BCELoss(dim=2, reduction = 'none')
-        loss_fn = reg_BCELoss(dim=2)
+        #loss_fn = reg_BCELoss(dim=2)
+
+        loss_fn = nn.CrossEntropyLoss()
 
         # Get optimizer # TODO: arguments randomyl chosen
-        optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate,
-                betas=betas, eps=eps)
+        #optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate,
+        #        betas=betas, eps=eps)
+
+        optimizer = torch.optim.SGD(network.parameters(), lr=learning_rate, momentum=0.96)
         
         # Epochs
         print("\nEpoch  |  Training Loss  |  Validation Loss")
         print("-------------------------------------------")
         
         i = 0
+        training_losses = []
+        evaluation_losses = []
         for t in range(epochs):
             # Train the NN
             training_loss = train(TrainDL, network, loss_fn, optimizer)
-            #training_loss /= n_train
+            training_loss /= n_train
+            training_losses.append(training_loss)
 
             # Validate on unseen data
             evaluation_loss = evaluation(ValidDL, network, loss_fn)
-            #evaluation_loss /= n_valid
+            evaluation_loss /= n_valid
+            evaluation_losses.append(evaluation_loss)
             
             # Print the losses
-            info_string = "   %i   |      %.12f      |      %.12f" % (t, training_loss, evaluation_loss)
+            info_string = "   %i   |      %.12f      |      %.30f" % (t, training_loss, evaluation_loss)
             print(info_string)
             
             # Store weights
@@ -197,5 +220,11 @@ if __name__=='__main__':
                 torch.save(network.state_dict(), f"../data/best_weights/{i}.pt")
                 print(f"Best weights stored in ../data/best_weights/{i}.pt")
                 i += 1
-
+        
+        print(training_losses)
+        print(evaluation_losses)
+        plt.plot(range(len(training_losses)), training_losses, "-o")
+        plt.plot(range(len(evaluation_losses)), evaluation_losses, "-o")
+        plt.show()
+        plt.savefig("losses.png")
         print("Done with training!\n")
