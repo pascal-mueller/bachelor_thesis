@@ -1,6 +1,5 @@
 import pycbc.detector, pycbc.waveform, pycbc.types
 import numpy as np
-from noise import getnoise
 
 class SampleGenerator:
     def __init__(self, file):
@@ -48,8 +47,6 @@ class SampleGenerator:
                 labels[i] = 0
                 #self.labels_ds[index] = 0
 
-                axs[0].plot(range(len(noise)), noise)
-            
             # Noise + Signal
             else:
                 noise = self.noise_ds[idx_noise]
@@ -63,7 +60,7 @@ class SampleGenerator:
                               
 
                 # Scale SNR and inject
-                sample, signal_scaled = self.SNR_scale(signal, noise)
+                sample = self.SNR_scale(signal, noise)
 
                 # Remember: Whiten turns 1.25s into 1s.
                 sample = self.whiten(sample)
