@@ -13,9 +13,9 @@ class FileManager:
         sample_rate = 2048
         length = duration * sample_rate
 
-        self.file.create_dataset("noise", (N_noise, length), dtype='f')
-        self.file.create_dataset("signals", (N_signal, length), dtype='f')
-        self.file.create_dataset("samples", (N_samples + N_noise, sample_rate), dtype='f')
+        self.file.create_dataset("noise", (N_noise, length), dtype='d')
+        self.file.create_dataset("signals", (N_signal, length), dtype='d')
+        self.file.create_dataset("samples", (N_samples + N_noise, sample_rate), dtype='d')
         self.file.create_dataset("samples_labels", (N_samples + N_noise,), dtype='i')
 
     def __enter__(self):
