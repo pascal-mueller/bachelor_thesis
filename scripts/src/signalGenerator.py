@@ -4,6 +4,7 @@ import numpy as np
 
 class SignalGenerator:
     def __init__(self, file=None):
+        np.random.seed(80)
         if file != None:
             self.dataset = file['signals']
 
@@ -57,15 +58,30 @@ class SignalGenerator:
             idx_merger = np.argmax(strain)
 
             # Cut 1.25s around merger.
-            k = self.duration * self.sample_rate
+            k = int(self.duration * self.sample_rate)
             k_half = int(0.5 * k)
             
             # Vary the merger by at most 0.2s seconds 
             k_vary = int(self.rng.uniform(-0.2, 0.2) * self.sample_rate)
             idx_merger += k_vary
             
+            # Set start and end index for cutting window
+            start = idx_merger - k_half
+            end = idx_merger + k_half
+            
+            # If merger is close to left or right end of the strain, we might
+            # not be able to center our cutting window around it but have to
+            # respect the left or right border.
+            if start < 0:
+                start = 0 # Set start to left border
+                end = start + k
+
+            if end > len(strain):
+                end = len(strain) # Set end to right border
+                start = end - k
+
             # Cut the 1.25s time slice from out strain
-            strain = strain[idx_merger - k_half : idx_merger + k_half]
+            strain = strain[start : end]
 
             #idx = param['index']
             strains[i] = strain
