@@ -30,7 +30,7 @@ class SingleTestDataset(torch.utils.data.Dataset):
         signal_space = SignalSpace(N=4, stride=1)
         signal_gen = SignalGenerator()
         signal_params = next(signal_space)
-        signal_params[0]['waveform_kwargs']['distance'] = 300
+        #signal_params[0]['waveform_kwargs']['distance'] = 2000
 
         signal = signal_gen.generate(signal_params)[0]
 
@@ -72,8 +72,17 @@ class SingleTestDataset(torch.utils.data.Dataset):
         target_snr = self.rng.uniform(5.0, 15.0)
         
         # TODO: Understand snr scaling here
-        sample = (self.noise + signal.numpy()) * (target_snr/network_snr)
-    
+        self.signal = signal.numpy() * (target_snr/network_snr)
+        sample = self.noise + self.signal
+        """
+        fix, axs = plt.subplots(4, 1)
+        axs[0].plot(range(len(self.noise)), self.noise)
+        axs[1].plot(range(len(signal)), signal)
+        axs[2].plot(range(len(self.noise)), self.noise)
+        axs[2].plot(range(len(signal)), signal)
+        axs[3].plot(range(len(sample)), sample)
+        plt.show()
+        """
         return sample
     
     def whiten(self, strain):
@@ -102,14 +111,10 @@ class SingleTestDataset(torch.utils.data.Dataset):
         axs[0].plot(t, self.noise)
         axs[0].plot(t, self.signal)
         axs[0].set_title("Pure noise with signal overlayed")
-        print(self.noise[9999:10010])
-        print(self.signal[9999:10010])
 
         # Plot strain (noise + signal)
         axs[1].plot(t, self.strain)
         axs[1].set_title("SNR scaled & whitened strain (Noise + signal)")
-        print(self.signal[9999:10010])
-        print(self.strain[9999:10010])
 
         if len(probabilities) > 0:
             axs[2].plot(t, probabilities)
