@@ -1,5 +1,4 @@
 from torch import nn
-import torch
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
@@ -9,28 +8,28 @@ class NeuralNetwork(nn.Module):
         #self.network = get_network(path_to_weights)
         self.normalizeInput = nn.BatchNorm1d(1)
         
-        self.conv1 = nn.Conv1d(1, 8, 65)
-        self.ELU = nn.ReLU()
+        self.conv1 = nn.Conv1d(1, 8, 64)
+        self.ELU = nn.ELU()
 
-        self.conv2 = nn.Conv1d(8, 8, 33)
+        self.conv2 = nn.Conv1d(8, 8, 32)
 
         self.maxpool1 = nn.MaxPool1d(4)
 
-        self.conv3 = nn.Conv1d(8, 16, 33)
+        self.conv3 = nn.Conv1d(8, 16, 32)
 
-        self.conv4 = nn.Conv1d(16, 16, 17)
+        self.conv4 = nn.Conv1d(16, 16, 16)
 
         self.maxpool2 = nn.MaxPool1d(3)
 
-        self.conv5 = nn.Conv1d(16, 32, 17)
+        self.conv5 = nn.Conv1d(16, 32, 16)
         
-        self.conv6 = nn.Conv1d(32, 32, 17)
+        self.conv6 = nn.Conv1d(32, 32, 16)
 
         self.maxpool3 = nn.MaxPool1d(2)
 
         self.flatten = nn.Flatten()
 
-        self.linear1 = nn.Linear(1824, 64)
+        self.linear1 = nn.Linear(1856, 64)
         self.dropout1 = nn.Dropout(p=0.5) #TODO: Decide p
         
         self.linear2 = nn.Linear(64, 64)
@@ -38,10 +37,6 @@ class NeuralNetwork(nn.Module):
 
         self.linear3 = nn.Linear(64, 2)
         self.softmax = nn.Softmax(dim=1)
-        self.output = nn.Sigmoid()
-        #self.unboundedSoftmax = nn.Linear(2, 2, bias=False)
-        #self.unboundedSoftmax._parameters['weight'] = nn.Parameter(
-        #        torch.Tensor([[0.0, -1.0], [-1.0, 0.0]]), requires_grad=False)
 
     def forward(self, inputs):
         #z = self.network(inputs)
@@ -97,6 +92,6 @@ class NeuralNetwork(nn.Module):
 
         # Output Layer - Linear + Softmax
         z = self.linear3(z)
-        z = self.output(z)
+        z = self.softmax(z)
 
         return z.unsqueeze(1)

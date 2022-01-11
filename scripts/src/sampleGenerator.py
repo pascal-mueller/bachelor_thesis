@@ -88,7 +88,7 @@ class SampleGenerator:
         foo = pycbc.filter.matchedfilter.sigmasq(signal, psd=psd,
                 low_frequency_cutoff = 18.0)
         network_snr = np.sqrt(foo)
-        target_snr = self.rng.uniform(5.0, 15.0)
+        target_snr = self.rng.uniform(3.0, 30.0)
 
         #print("network_snr=", network_snr, " target_snr=", target_snr, "ratio=", target_snr/network_snr)
         
