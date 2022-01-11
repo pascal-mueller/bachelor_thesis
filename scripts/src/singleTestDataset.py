@@ -17,7 +17,7 @@ class SingleTestDataset(torch.utils.data.Dataset):
 
         self.length = self.duration * self.sample_rate
         self.noise = self.get_noise()
-        self.signal = self.get_signal()
+        self.signals = self.get_signals(N=6)
         self.strain = self.get_strain()
 
     def get_noise(self):
@@ -26,24 +26,29 @@ class SingleTestDataset(torch.utils.data.Dataset):
         return noise_gen.generate() 
 
     
-    def get_signal(self):
-        signal_space = SignalSpace(N=4, stride=1)
+    def get_signals(self, N):
+        signal_space = SignalSpace(N=N, stride=1)
         signal_gen = SignalGenerator()
-        signal_params = next(signal_space)
-        #signal_params[0]['waveform_kwargs']['distance'] = 2000
 
-        signal = signal_gen.generate(signal_params)[0]
+        signals = np.zeros(self.length)
+        k = int(self.length / (N+1) )
 
-        start = int( 0.5 * (self.length - len(signal)) )
-        end = int( 0.5 * (self.length + len(signal)) )
-        signal_tmp = np.zeros(self.length)
-        signal_tmp[start : end] = signal
+        print("length=", self.length, " k=", k)
 
-        return signal_tmp
+        for i, signal_params in enumerate(signal_space):
+            signal = signal_gen.generate(signal_params)[0]
+            
+            start = (i+1) * int( k - 0.5*len(signal) )
+            end = start + len(signal)
+            signals[start : end] = signal
+
+            print("Inject at", start)
+
+        return signals
     
     def get_strain(self):
         n_noise = len(self.noise)
-        n_signal = len(self.signal)
+        n_signal = len(self.signals)
 
         k_inj = int(0.5 * (n_noise - n_signal))
 
@@ -64,7 +69,7 @@ class SingleTestDataset(torch.utils.data.Dataset):
     
         # df = 1 / duration
         # dt = 1 / sample_rate
-        signal = pycbc.types.TimeSeries(self.signal, 
+        signal = pycbc.types.TimeSeries(self.signals, 
                              delta_t = 1.0 / self.sample_rate, dtype=np.float64)
         foo = pycbc.filter.matchedfilter.sigmasq(signal, psd=psd,
                 low_frequency_cutoff = 18.0)
@@ -72,8 +77,8 @@ class SingleTestDataset(torch.utils.data.Dataset):
         target_snr = self.rng.uniform(5.0, 15.0)
         
         # TODO: Understand snr scaling here
-        self.signal = signal.numpy() * (target_snr/network_snr)
-        sample = self.noise + self.signal
+        self.signals = signal.numpy() * (target_snr/network_snr)
+        sample = self.noise + self.signals
         """
         fix, axs = plt.subplots(4, 1)
         axs[0].plot(range(len(self.noise)), self.noise)
@@ -109,7 +114,7 @@ class SingleTestDataset(torch.utils.data.Dataset):
         
         # Plot noise with signal overlayed
         axs[0].plot(t, self.noise)
-        axs[0].plot(t, self.signal)
+        axs[0].plot(t, self.signals)
         axs[0].set_title("Pure noise with signal overlayed")
 
         # Plot strain (noise + signal)
@@ -119,7 +124,8 @@ class SingleTestDataset(torch.utils.data.Dataset):
         if len(probabilities) > 0:
             axs[2].plot(t, probabilities)
             axs[2].set_title("Probability signal")
-
+        
+        print("Plotting...")
         plt.show()
 
     def __len__(self):
