@@ -1,23 +1,29 @@
 weights_file="best_weights.pt"
+dir=../data/test_data-big
+output_dir=../data/output
 device="cuda"
+trigger_threshold=0.4
+cluster_threshold=0.3
 
 # Apply trained neural network to background file
-inputfile="../data/test_data-big/background_file.hdf"
-outputfile="../data/output/background_events.hdf"
-cmd="python apply.py $weights_file $inputfile $outputfile --device=$device"
+inputfile=$dir/background_file.hdf5
+output_file=$output_dir/background_events.hdf5
+predictions_file=$output_dir/background_labels-big.hdf5
+
+cmd="python apply.py $trigger_threshold $cluster_threshold $weights_file $inputfile $output_file $predictions_file --device=$device"
 
 echo "Running"
 echo " >>> $cmd"
 $cmd
 
-exit 0
+
 # Apply trained neural network to foreground file
-inputfile="../data/test_data-big/foreground_file.hdf"
-outputfile="../data/output/foreground_events.hdf"
-cmd="python apply.py $weights_file $inputfile $outputfile --device=$device"
+inputfile=$dir/foreground_file.hdf5
+output_file=$output_dir/foreground_events.hdf5
+predictions_file=$output_dir/foreground_labels.hdf5
 
-echo ""
+cmd="python apply.py $trigger_threshold $cluster_threshold $weights_file $inputfile $output_file $predictions_file --device=$device"
+
 echo "Running"
 echo " >>> $cmd"
 $cmd
-

@@ -8,3 +8,5 @@ cmd="python $plot_script --files $eval_output_file --output $plot_file"
 
 echo "Running $cmd"
 $cmd
+
+feh ../data/output/sensitivity_plot.png
