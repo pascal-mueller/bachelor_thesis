@@ -23,6 +23,7 @@ def train(TrainDL, network, loss_fn, optimizer):
     # i_batch describes which batch we currently work through.
     # (samples, labels) is the actual data
     iterable = tqdm(TrainDL, desc=f"Training Network")
+
     for i_batch, (samples, labels) in enumerate(iterable):
         # Send data to device
         # [N, num_channels, length_data]
@@ -41,7 +42,7 @@ def train(TrainDL, network, loss_fn, optimizer):
 
         # Get labels (cause use sigmoid)
         #labels = labels[:,0]
-        
+
         # send to device
         labels = labels.to(args.device)
 
@@ -65,6 +66,11 @@ def evaluation(ValidDL, network, loss_fn):
 
     # Variables
     loss = 0.0
+    
+    p_scores = []
+    labels_store = []
+
+    correct = 0
 
     with torch.no_grad(): # TODO: Why use this?
         iterable = tqdm(ValidDL, desc=f"Validate trained Network")
@@ -86,12 +92,60 @@ def evaluation(ValidDL, network, loss_fn):
             # send to device
             labels = labels.to(args.device)
 
+            p_scores.extend(labels_pred[:,0].cpu())
+            labels_store.extend(labels[:,0].cpu())
+
+        
             # Compute loss
             #loss_fn.weight = weights
             loss_batch = loss_fn(labels_pred, labels.float())
             loss += loss_batch.item()
 
-    return loss
+            # Compute how many are above threshold 0.4 (arbritary)
+            labels_pred = labels_pred.cpu()
+            labels = labels.cpu()
+            idx = labels_pred[:,0] > 0.4
+            labels_pred[idx == True] = torch.tensor([1.0, 0.0])
+            labels_pred[idx == False] = torch.tensor([0.0, 1.0])
+            correct += sum(torch.eq(labels, labels_pred)[:,0])
+        
+    efficiency = compute_efficiency(p_scores, labels_store)
+
+    return loss, correct, efficiency 
+
+def compute_efficiency(p_scores, labels, FAP=0.0001):
+    # 1. Sort p-scores, largest first.
+    # 2. Choose the threshold.
+    #    The threshold is given by the x-th largest where as we choose x to be:
+    #      x = argmin_(x' in N) ( x'/N_noise - FAP)^2
+    #    where N_noise = # total amount of noise samples.
+    # 3. Compute efficiency by using the formula:
+    #      efficiency = N_(signal > t) / N_s
+    #    where N_(signal>t) are # of signals with p_score > t and N_s is total
+    #    # of signals.
+    p_scores = np.array(p_scores)
+    labels = np.array(labels)
+
+    N_total = len(labels)
+    N_signal = sum(labels)
+    N_noise = N_total - N_signal
+    
+    idx_signals = (labels == 1.0)
+    p_scores_sorted = np.sort(p_scores)
+
+    # From 2. we get x = N_noise * FAP
+    x = int(N_noise * FAP)
+    
+    # Get threshold
+    t = p_scores_sorted[-x]
+
+    print("Threshold=", t)
+
+    N_signal_t = sum(p_scores[idx_signals] > t)
+
+    efficiency = N_signal_t / N_signal
+
+    return efficiency
 
 if __name__=='__main__':
     # Get CLI parser
@@ -133,13 +187,13 @@ if __name__=='__main__':
     if args.train == True:
         print("Training network...")
         # Parameters
-        learning_rate = 0.00001
+        learning_rate = 0.0001
         beta1 = 0.9
         beta2 = 0.999
         betas = (beta1, beta2)
         eps = 1e-8
         batch_size = 32
-        epochs = 2
+        epochs = 200
         best_loss = 1.0e10 # Impossibly bad value
         
         # Read samples dataset
@@ -157,30 +211,30 @@ if __name__=='__main__':
             pin_memory=True, shuffle=True)
         ValidDL = torch.utils.data.DataLoader(ValidDS, batch_size=batch_size,
             pin_memory=True, shuffle=True)
-        
+         
         n_train = len(TrainDL)
         n_valid = len(ValidDL)
 
-        print(n_train, n_valid)
+        # Determine how many noise and noise+signal samples we have in the
+        # validation set.
+        n_valid_signal = sum(samplesDS[validation_indices][1][:,0])
+        n_valid_noise = sum(samplesDS[validation_indices][1][:,1])
+        n_valid_total = len(validation_indices)
 
         # Get loss function
-        #loss_fn = reg_BCELoss(dim=2, reduction = 'none')
         loss_fn = reg_BCELoss(dim=2)
-        #loss_fn = nn.BCELoss()
-
-        #loss_fn = nn.CrossEntropyLoss()
 
         # Get optimizer # TODO: arguments randomyl chosen
-        #optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate,
-        #        betas=betas, eps=eps)
+        optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate,
+                betas=betas, eps=eps)
         
         #optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate)
 
-        optimizer = torch.optim.SGD(network.parameters(), lr=learning_rate, momentum=0.9)
+        #optimizer = torch.optim.SGD(network.parameters(), lr=learning_rate, momentum=0.9)
         
         # Epochs
-        print("\nEpoch  |  Training Loss  |  Validation Loss")
-        print("-------------------------------------------")
+        print("\nEpoch  |  Training Loss  |  Validation Loss    |    Accuracy ")
+        print("--------------------------------------------------------------")
         
         j = 0
         training_losses = []
@@ -192,13 +246,17 @@ if __name__=='__main__':
             training_losses.append(training_loss)
 
             # Validate on unseen data
-            evaluation_loss = evaluation(ValidDL, network, loss_fn)
+            evaluation_loss, correct, efficiency= evaluation(ValidDL, network, loss_fn)
             evaluation_loss /= n_valid
             evaluation_losses.append(evaluation_loss)
             
+            # Compute accuracy
+            accuracy = correct / n_valid_total
+
             # Print the losses
-            info_string = "   %i   |      %.12f      |      %.30f" % (t, training_loss, evaluation_loss)
-            print(info_string)
+            info_string = "   %i   |      %.12f      |      %.30f       |     %.4f    |    %.4f     "
+
+            print(info_string % (t, training_loss, evaluation_loss, accuracy, efficiency))
             
             # Store weights
             if evaluation_loss < best_loss:
@@ -211,7 +269,11 @@ if __name__=='__main__':
                 plt.plot(range(len(training_losses)), training_losses, "-o")
                 plt.plot(range(len(evaluation_losses)), evaluation_losses, "-o")
                 plt.savefig("losses.png")
-        
+
+        print(training_losses)
+        print(evaluation_losses)
+
+
         plt.plot(range(len(training_losses)), training_losses, "-o")
         plt.plot(range(len(evaluation_losses)), evaluation_losses, "-o")
         plt.savefig("losses.png")
