@@ -9,15 +9,19 @@ from src.signalGenerator import SignalGenerator
 from src.noiseGenerator import NoiseGenerator 
 
 class SingleTestDataset(torch.utils.data.Dataset):
-    def __init__(self, stride=0.1, duration=10, device='cuda'):
+    def __init__(self, stride=0.1, device='cpu'):
         self.sample_rate = 2048
-        self.duration = duration
+        self.duration = 10
         self.stride = stride
         self.rng = np.random.default_rng()
-
         self.length = self.duration * self.sample_rate
+
+        N = 5
+
+        self.target_snrs = np.linspace(5.0, 30.0, N)
+        self.signals = self.get_signals(N)
+        self.duration = int(len(self.signals) / 2048)
         self.noise = self.get_noise()
-        self.signals = self.get_signals(N=6)
         self.strain = self.get_strain()
 
     def get_noise(self):
@@ -30,19 +34,30 @@ class SingleTestDataset(torch.utils.data.Dataset):
         signal_space = SignalSpace(N=N, stride=1)
         signal_gen = SignalGenerator()
 
-        signals = np.zeros(self.length)
-        k = int(self.length / (N+1) )
+        signals = [0] * (self.sample_rate * 4) # 4 seconds
 
-        print("length=", self.length, " k=", k)
-
+        padding = 3 # seconds
         for i, signal_params in enumerate(signal_space):
             signal = signal_gen.generate(signal_params)[0]
-            
-            start = (i+1) * int( k - 0.5*len(signal) )
-            end = start + len(signal)
-            signals[start : end] = signal
 
-            print("Inject at", start)
+            signal = self.SNR_scale(signal, self.target_snrs[i])
+            
+            k = int(np.ceil(len(signal) / self.sample_rate))
+            
+            # Allocate temporarily memory that holds the signal and 3 seconds
+            # of padding behind it.
+            tmp = [0] * ((k + 3) * self.sample_rate)
+            
+            tmp[0 : len(signal)] = signal
+            # Add signal
+            signals.extend(tmp)
+        
+        # Add 1 second of zeros at the end. That's because the last signal
+        # is the one which the biggest SNR and somehow we get an artifact
+        # (high signal probability) at the very end of the plot. That's probably
+        # due to whitening but I'm not 100% sure. Adding 1s of zeros solves it.
+        tmp = [0] * (1*self.sample_rate)
+        signals.extend(tmp)
 
         return signals
     
@@ -53,32 +68,33 @@ class SingleTestDataset(torch.utils.data.Dataset):
         k_inj = int(0.5 * (n_noise - n_signal))
 
         strain = self.noise.copy()
-        
+
         # Scale SNR and also make injection
-        strain = self.SNR_scale()
-        strain = self.whiten(strain)
+        strain = self.noise + self.signals # Actual injection
+        strain = self.whiten(strain) 
         
         return strain
 
-    def SNR_scale(self):
+    def SNR_scale(self, signal, target_snr):
         # Create PSD for detector
         psd_length = int(0.5 * self.sample_rate * self.duration) + 1
-        delta_f = 1.0 / self.duration
+        delta_f = 1.0 / (len(signal) / 2048)
         psd_fn = pycbc.psd.analytical.aLIGOZeroDetHighPower
         psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=18.0)
-    
-        # df = 1 / duration
-        # dt = 1 / sample_rate
-        signal = pycbc.types.TimeSeries(self.signals, 
+        
+        signal = pycbc.types.TimeSeries(signal, 
                              delta_t = 1.0 / self.sample_rate, dtype=np.float64)
         foo = pycbc.filter.matchedfilter.sigmasq(signal, psd=psd,
                 low_frequency_cutoff = 18.0)
+
         network_snr = np.sqrt(foo)
-        target_snr = self.rng.uniform(5.0, 15.0)
+        print("target = ", target_snr)
         
+        return signal * (target_snr / network_snr)
+
         # TODO: Understand snr scaling here
-        self.signals = signal.numpy() * (target_snr/network_snr)
-        sample = self.noise + self.signals
+        #self.signals = signal.numpy() * (target_snr/network_snr)
+        #sample = self.noise + self.signals
         """
         fix, axs = plt.subplots(4, 1)
         axs[0].plot(range(len(self.noise)), self.noise)
@@ -88,7 +104,7 @@ class SingleTestDataset(torch.utils.data.Dataset):
         axs[3].plot(range(len(sample)), sample)
         plt.show()
         """
-        return sample
+        #return sample
     
     def whiten(self, strain):
         # Whiten
@@ -97,9 +113,12 @@ class SingleTestDataset(torch.utils.data.Dataset):
         # TODO: After whitening we only have 1s left. Input was 1.5s.
         # How do we get exaclty 1s?
         # ASSUMING 1.25 s
-        strain = strain.whiten(0.5, 0.25, remove_corrupted = False,
+        k = int(self.sample_rate * 0.125)
+        strain.prepend_zeros(k)
+        strain.append_zeros(k)
+        strain = strain.whiten(0.5, 0.25, remove_corrupted = True,
                 low_frequency_cutoff = 18.0)
-    
+
         return strain.numpy()
 
     def plot(self, probabilities=[]):
@@ -116,14 +135,20 @@ class SingleTestDataset(torch.utils.data.Dataset):
         axs[0].plot(t, self.noise)
         axs[0].plot(t, self.signals)
         axs[0].set_title("Pure noise with signal overlayed")
+        axs[0].set_xticks(np.arange(0,len(t)+1, 2048))
+        axs[0].set_xticklabels(np.arange(0,len(t)+1, 2048), rotation=45)
 
         # Plot strain (noise + signal)
         axs[1].plot(t, self.strain)
         axs[1].set_title("SNR scaled & whitened strain (Noise + signal)")
+        axs[0].set_xticks(np.arange(0,len(t)+1, 2048))
+        axs[0].set_xticklabels(np.arange(0,len(t)+1, 2048), rotation=45)
 
         if len(probabilities) > 0:
             axs[2].plot(t, probabilities)
             axs[2].set_title("Probability signal")
+            axs[2].set_xticks(np.arange(0,len(t)+1, 2048))
+            axs[2].set_xticklabels(np.arange(0,len(t)+1, 2048), rotation=45)
         
         print("Plotting...")
         plt.show()
@@ -140,56 +165,3 @@ class SingleTestDataset(torch.utils.data.Dataset):
         end = start + 2048
 
         return start, end, np.array(self.strain[start : end])
-"""
-
-
-class SingleTestDataset(torch.utils.data.Dataset):
-    def __init__(self, filename, stride=0.1, device='cuda'):
-        self.device = device
-        self.sample_rate = 2048
-        self.stride = stride
-
-        # Init file
-        self.file = h5py.File(filename, 'r')
-        
-        self.noise_ds = self.file['noise']
-        self.signals_ds = self.file['signals']
-        self.samples_ds = self.file['samples']
-        self.labels_ds = self.file['samples_labels']
-
-        self.length = 0
-        
-        # Compute length in amount of samples of size self.stride
-        num_seconds = ( len(self.samples_ds) - len(self.noise_ds) ) / self.stride
-        print(num_seconds)
-        # We have a moving window of 1s, thus the - 1.
-        self.length = int(((num_seconds - 1 ) / self.stride))
-        print(self.length)
-
-        # Compute total duration: Add moving window for each dataset.
-        self.duration = self.length * self.stride + 1 
-
-    def __len__(self):
-        return self.length
-
-    def get_signal_and_noise(self):
-        return self.samples_ds[0], self.signals_ds[0][0:2048], self.noise_ds[0][0:2048]
-    
-    # TODO: If we have a stride of 0.1 then we get 2048*0.1 = 204.8 but we need
-    # an integer. So currently we have some left over that at the end. Fix that.
-    # Always returns 1s of data
-    def __getitem__(self, i):
-        p = i
-        k = 0
-
-        # To get the i-th sample, we first have to determine in which dataset
-        # it is. Then we get it.
-        i = i * (self.sample_rate * self.stride)
-        k = k * (self.sample_rate * self.stride)
-
-        start = int(i)
-        end = int(start + 2048)
-        item = self.samples_ds[0][start : end]
-        print(" >> ", end - start) 
-        return item 
-"""
