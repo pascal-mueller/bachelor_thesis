@@ -2,7 +2,8 @@ import pycbc.detector, pycbc.waveform, pycbc.types
 import numpy as np
 
 class SampleGenerator:
-    def __init__(self, file):
+    def __init__(self, psd, file):
+        self.psd = psd
         self.sample_rate = 2048
         self.duration = 1.25
         self.rng = np.random.default_rng()
@@ -79,13 +80,15 @@ class SampleGenerator:
 
     def SNR_scale(self, signal, noise):
         # Create PSD for detector
+        """
         psd_length = int(0.5 * self.sample_rate * self.duration) + 1
         delta_f = 1.0 / self.duration
         psd_fn = pycbc.psd.analytical.aLIGOZeroDetHighPower
         psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=15.0)
+        """
     
         # SNR scaling
-        foo = pycbc.filter.matchedfilter.sigmasq(signal, psd=psd,
+        foo = pycbc.filter.matchedfilter.sigmasq(signal, psd=self.psd,
                 low_frequency_cutoff = 18.0)
         network_snr = np.sqrt(foo)
         target_snr = self.rng.uniform(3.0, 30.0)

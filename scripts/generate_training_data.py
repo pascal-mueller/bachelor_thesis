@@ -1,4 +1,5 @@
 from mpi4py import MPI # Will auto Init() and Finalize() MPI.
+import pycbc.psd
 
 from src.signalSpace import SignalSpace
 from src.noiseSpace import NoiseSpace
@@ -35,6 +36,18 @@ if __name__=='__main__':
     N_noise = int(sys.argv[1])
     N_signal = int(sys.argv[2])
     N_samples = int(sys.argv[3])
+
+    psd = None
+    if world_rank == 0:
+        # Generate PSD
+        psd_length = int(0.5 * 2048 * 1.25) + 1
+        delta_f = 1.0 / 1.25
+        psd_fn = pycbc.psd.analytical.aLIGOZeroDetHighPower
+        psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=15.0)
+
+    # Send psd to all slaves
+    psd = world.bcast(psd, root=0)
+    print("Broadcasted PSD", psd)
 
     # 0 Rank is our master, rest are slaves
     if world_rank == 0:
@@ -130,7 +143,7 @@ if __name__=='__main__':
             
             # Ask master for initial work.
             world.send(obj=world_rank, dest=0, tag=0)
-            noise_gen = NoiseGenerator(file)
+            noise_gen = NoiseGenerator(psd, file)
             while(True):
                 # Receive work from master
                 noise_params = world.recv(source=0, tag=world_rank)
@@ -153,7 +166,7 @@ if __name__=='__main__':
             start = time.time()
 
             world.send(obj=world_rank, dest=0, tag=0)
-            sample_gen = SampleGenerator(file)
+            sample_gen = SampleGenerator(psd, file)
             while(True):
                 # Receive work from master
                 sample_params = world.recv(source=0, tag=world_rank)
