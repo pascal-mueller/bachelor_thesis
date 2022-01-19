@@ -40,8 +40,9 @@ class NoiseGenerator:
         """
 
         # Generate noise from PSD
+        seed = int((time.time()* time.time() )% 200000 )
         noise_fn = pycbc.noise.gaussian.frequency_noise_from_psd
-        noise = noise_fn(self.psd).to_timeseries().numpy()
+        noise = noise_fn(self.psd, seed).to_timeseries().numpy()
         
         #idx = param['index']
         #self.dataset[idx] = noise
