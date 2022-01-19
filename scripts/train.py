@@ -12,7 +12,7 @@ from src.samplesDataset import SamplesDataset
 from src.reg_BCELoss import reg_BCELoss
 
 def train(TrainDL, network, loss_fn, optimizer):
-    # Put model in train mode
+    # Put model in train mode 
     network.train()
     
     loss = 0.0
@@ -131,15 +131,15 @@ def compute_efficiency(p_scores, labels, FAP=0.0001):
     N_noise = N_total - N_signal
     
     idx_signals = (labels == 1.0)
-    p_scores_sorted = np.sort(p_scores)
+    idx_noise = (labels == 0.0)
+
+    p_scores_sorted = np.sort(p_scores[idx_noise])
 
     # From 2. we get x = N_noise * FAP
     x = int(N_noise * FAP)
     
     # Get threshold
     t = p_scores_sorted[-x]
-
-    print("Threshold=", t)
 
     N_signal_t = sum(p_scores[idx_signals] > t)
 
@@ -236,7 +236,6 @@ if __name__=='__main__':
         print("\nEpoch  |  Training Loss  |  Validation Loss    |    Accuracy ")
         print("--------------------------------------------------------------")
         
-        j = 0
         training_losses = []
         evaluation_losses = []
         for i, t in enumerate(range(epochs)):
@@ -263,9 +262,8 @@ if __name__=='__main__':
                 best_loss = evaluation_loss
                 torch.save(network.state_dict(), f"../data/best_weights/{i}.pt")
                 print(f"Best weights stored in ../data/best_weights/{i}.pt")
-                j += 1
             
-            if j % 5 == 0:
+            if i % 5 == 0:
                 plt.plot(range(len(training_losses)), training_losses, "-o")
                 plt.plot(range(len(evaluation_losses)), evaluation_losses, "-o")
                 plt.savefig("losses.png")
