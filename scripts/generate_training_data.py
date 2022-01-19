@@ -42,7 +42,7 @@ if __name__=='__main__':
         # Generate PSD
         psd_length = int(0.5 * 2048 * 1.25) + 1
         delta_f = 1.0 / 1.25
-        psd_fn = pycbc.psd.analytical.aLIGOZeroDetHighPower
+        psd_fn = pycbc.psd.aLIGOZeroDetHighPower
         psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=15.0)
 
     # Send psd to all slaves
