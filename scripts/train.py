@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from tqdm import tqdm
 
 from src.neuralNetwork import NeuralNetwork
+from src.neuralNetwork import get_network
 from src.samplesDataset import SamplesDataset
 
 from src.reg_BCELoss import reg_BCELoss
@@ -19,8 +20,7 @@ def train(TrainDL, network, loss_fn, optimizer):
 
     # TrainDL is an iterator. Each iteration gives us a bunch of
     # (samples, labels). The size of (samples, labels) depends on batch_size.
-    # We put the TrainDL iterator in an enumerate to get the key/value pair.
-    # i_batch describes which batch we currently work through.
+    # We put the TrainDL iterator in an enumerate to get the key/value pair. i_batch describes which batch we currently work through.
     # (samples, labels) is the actual data
     iterable = tqdm(TrainDL, desc=f"Training Network")
 
@@ -166,11 +166,13 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     # Set options
-    torch.manual_seed(421)
+    torch.manual_seed(421123)
+    np.random.seed(111232)
 
     # Get model
     # TODO: Proper state saving
-    network = NeuralNetwork().to(args.device)
+    #network = NeuralNetwork().to(args.device)
+    network = get_network().to(args.device)
     
     if args.train == None and args.weights_file == None:
         print("--train set to False and no weights given.")
@@ -201,8 +203,10 @@ if __name__=='__main__':
 
         # Make a 80/20 split for training/eval data
         k = len(samplesDS)
-        train_indices = np.arange(0, int(k * 0.8), dtype='int')
-        validation_indices = np.arange(int(k * 0.8), k, dtype='int')
+        indices = np.arange(k)
+        np.random.shuffle(indices)
+        train_indices = np.arange(0, int(k * 0.5), dtype='int')
+        validation_indices = np.arange(int(k * 0.5), k, dtype='int')
         TrainDS = torch.utils.data.Subset(samplesDS, train_indices)
         ValidDS = torch.utils.data.Subset(samplesDS, validation_indices)
         
@@ -245,7 +249,7 @@ if __name__=='__main__':
             training_losses.append(training_loss)
 
             # Validate on unseen data
-            evaluation_loss, correct, efficiency= evaluation(ValidDL, network, loss_fn)
+            evaluation_loss, correct, efficiency = evaluation(ValidDL, network, loss_fn)
             evaluation_loss /= n_valid
             evaluation_losses.append(evaluation_loss)
             
