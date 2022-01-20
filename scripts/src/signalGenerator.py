@@ -15,6 +15,7 @@ class SignalGenerator:
         self.rng = np.random.default_rng()
 
     def generate(self, params):
+        # Allocate memory
         strains = np.zeros((len(params), 2560)) 
 
         for (i, param) in enumerate(params):

@@ -42,6 +42,7 @@ class SignalSpace:
 
             # Set members
             sample = {} 
+            # TODO: Why + 1?
             sample['index'] = self.idx + i
             sample['waveform_kwargs'] = waveform_kwargs
             sample['declination'] = declination
@@ -55,6 +56,7 @@ class SignalSpace:
     def __len__(self):
         # TODO:: This might be an issue because we won't have
         # len * stride amount of samples.
+        # TODO: Maybe enforce self.N % self.stride == 0? See also __next__.
         return int(np.ceil( self.N / self.stride))
 
     def __iter__(self):

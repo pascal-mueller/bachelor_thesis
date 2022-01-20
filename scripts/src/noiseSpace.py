@@ -3,6 +3,7 @@ import pycbc.distributions
 
 class NoiseSpace:
     def __init__(self, N, stride):
+        print("\n\n\n\n\nGenerating noise: ", N, "\n\n\n\n")
         # Amount of samples
         self.N = N
         self.sample_rate = 2048
@@ -28,6 +29,7 @@ class NoiseSpace:
     def __len__(self):
         # TODO:: This might be an issue because we won't have
         # len * stride amount of samples.
+        # TODO: Maybe enforce self.N % self.stride == 0. See also __next__.
         return int(np.ceil( self.N / self.stride))
 
     def __iter__(self):

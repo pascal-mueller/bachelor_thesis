@@ -23,7 +23,7 @@ class SampleGenerator:
             index = param['index']
             idx_noise = param['idx_noise']
             idx_signal = param['idx_signal']
-            
+
             # Pure noise
             if idx_signal == None:
                 noise = self.noise_ds[idx_noise]
@@ -91,7 +91,7 @@ class SampleGenerator:
         foo = pycbc.filter.matchedfilter.sigmasq(signal, psd=self.psd,
                 low_frequency_cutoff = 18.0)
         network_snr = np.sqrt(foo)
-        target_snr = self.rng.uniform(3.0, 30.0)
+        target_snr = self.rng.uniform(5.0, 30.0)
 
         #print("network_snr=", network_snr, " target_snr=", target_snr, "ratio=", target_snr/network_snr)
         

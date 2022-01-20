@@ -1,4 +1,5 @@
 import pycbc.psd, pycbc.noise
+import time
 import numpy as np
 
 class NoiseGenerator:
@@ -21,10 +22,9 @@ class NoiseGenerator:
                 noise = self.generate_noise()
                 data[i] = noise
             
-                idx = params[0]['index']
-                k = len(params)
-            
-                self.dataset[idx : idx + k] = data
+            idx = params[0]['index']
+            k = len(params)
+            self.dataset[idx : idx + k] = data
         # Generate one and return
         else:
             return self.generate_noise()
@@ -40,9 +40,13 @@ class NoiseGenerator:
         """
 
         # Generate noise from PSD
-        seed = int((time.time()* time.time() )% 200000 )
-        noise_fn = pycbc.noise.gaussian.noise_from_psd
-        noise = noise_fn(self.psd, seed).numpy()
+        seed = int((time.time()* time.time() )% 200001 )
+        length = len(self.psd)
+        delta_t = 1.0 / self.sample_rate 
+        # delta_f = 1.0 / self.duration 
+        # delta_t =  1.0 / self.sample_rate
+        
+        noise = pycbc.noise.gaussian.noise_from_psd(length, delta_t, self.psd, seed).numpy()
         
         #idx = param['index']
         #self.dataset[idx] = noise

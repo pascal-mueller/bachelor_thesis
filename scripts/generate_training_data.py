@@ -30,7 +30,6 @@ if __name__=='__main__':
     slaves = world.Split(color=color, key=world_rank)
    
     # Filename 
-    #filename = 'data.hdf5'
     filename = sys.argv[5]
     
     N_noise = int(sys.argv[1])
@@ -40,24 +39,21 @@ if __name__=='__main__':
     psd = None
     if world_rank == 0:
         # Generate PSD
-        psd_length = int(0.5 * 2048 * 1.25) + 1
+        # TODO: Why choose PSD length like that? Shouldn't I choose
+        # int(0.5 * 2048 * 1.25) + 1?
+        psd_length = int(2048 * 1.25)
         delta_f = 1.0 / 1.25
         psd_fn = pycbc.psd.aLIGOZeroDetHighPower
         psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=15.0)
 
     # Send psd to all slaves
     psd = world.bcast(psd, root=0)
-    print("Broadcasted PSD", psd)
+    print("Broadcasted PSD:", psd)
 
     # 0 Rank is our master, rest are slaves
     if world_rank == 0:
-        # Get parameter space from which we draw the parameters
-        # for our samples. 
-        #stride = int(N_noise / world.size )
         stride = int(sys.argv[4])
 
-        #sample_space = SampleSpace(N_noise, N_signal, N_samples, stride)
-        
         #
         # Generate signals
         #
@@ -74,12 +70,15 @@ if __name__=='__main__':
         for i in range(1, world.size):
             dest = world.recv(source=i, tag=0)
             world.send(obj=None, dest=dest, tag=dest)
-        
+
         #
         # Generate noise
         #
-        noise_space = NoiseSpace(N_noise, stride)
-        iterable = tqdm(noise_space, desc=f"Generating {N_noise} noise samples")
+
+        # NOTE: We create N_noise pure noise samples but also need N_signal
+        # noise samples for all the signals.
+        noise_space = NoiseSpace(N_noise + N_signal, stride)
+        iterable = tqdm(noise_space, desc=f"Generating {N_noise + N_signal} noise samples")
         for (i, noise_params) in enumerate(iterable):
             # Receive a request from a slave to get more work
             dest = world.recv(source=MPI.ANY_SOURCE, tag=0)
@@ -95,7 +94,7 @@ if __name__=='__main__':
         #
         # Generate samples
         #
-        sample_space = SampleSpace(N_noise, N_signal, N_samples, stride)
+        sample_space = SampleSpace(N_noise, N_signal, stride)
         iterable = tqdm(sample_space, desc=f"Generating {N_samples + N_noise} samples")
         for (i, sample_params) in enumerate(iterable):
             # Receive a request from a slave to get more work
@@ -108,14 +107,12 @@ if __name__=='__main__':
         for i in range(1, world.size):
             dest = world.recv(source=i, tag=0)
             world.send(obj=None, dest=dest, tag=dest)
-
     # Slaves
     else:
-        with FileManager(filename, N_noise, N_signal, N_samples, comm=slaves) as file:
+        with FileManager(filename, N_noise, N_signal, comm=slaves) as file:
             #
             # Generate Signals
             #
-            
             start = time.time()
 
             # Ask master for initial work.
@@ -138,7 +135,6 @@ if __name__=='__main__':
             #
             # Generate Noise
             #
-
             start = time.time()
             
             # Ask master for initial work.
@@ -147,7 +143,7 @@ if __name__=='__main__':
             while(True):
                 # Receive work from master
                 noise_params = world.recv(source=0, tag=world_rank)
-
+                
                 if noise_params is None:
                     break
                 
@@ -179,16 +175,43 @@ if __name__=='__main__':
 
                 # Ask the master for more work.
                 world.send(obj=world_rank, dest=0, tag=0)
-            
             worktime_samples = time.time() - start
-    
     end_time = time.time()
     total_time = end_time - start_time
 
     print(f"Rank {world_rank}: total={total_time}, signals={worktime_signals}, \
             noise={worktime_noise}, samples={worktime_samples}")
+    
+    """
+    world.barrier()
 
+    if world_rank == 0:
+        import matplotlib.pyplot as plt
+        from matplotlib.animation import FuncAnimation, PillowWriter
+        import h5py
+        
+        file = h5py.File(filename, 'r')
+        signals = file["samples"]
+        
+        fig, ax = plt.subplots()
+        
+        def animate(i):
+            x = range(len(signals[i]))
+            y = signals[i]
 
+            ax.clear()
+            ax.plot(x, y)
+            ax.set_title(f"Sample Nr. {i}")
+        
+        anim = FuncAnimation(fig, animate, frames=200, interval=100, repeat=False)
+
+        f = "samples.gif"
+        writergif = PillowWriter(fps=30) 
+        anim.save(f, writer=writergif)
+        
+        plt.show()
+    """
+        
 """
     1. Create MPI stuff
     2. Create FileWrapper object => creates datasets and all that
