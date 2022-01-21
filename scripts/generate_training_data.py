@@ -41,10 +41,11 @@ if __name__=='__main__':
         # Generate PSD
         # TODO: Why choose PSD length like that? Shouldn't I choose
         # int(0.5 * 2048 * 1.25) + 1?
-        psd_length = int(2048 * 1.25)
         delta_f = 1.0 / 1.25
+        psd_length = int( (0.5 * 2048) / delta_f ) + 1
+        #delta_f = 1.0 / 1.25
         psd_fn = pycbc.psd.aLIGOZeroDetHighPower
-        psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=15.0)
+        psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=18.0)
 
     # Send psd to all slaves
     psd = world.bcast(psd, root=0)
@@ -182,7 +183,6 @@ if __name__=='__main__':
     print(f"Rank {world_rank}: total={total_time}, signals={worktime_signals}, \
             noise={worktime_noise}, samples={worktime_samples}")
     
-    """
     world.barrier()
 
     if world_rank == 0:
@@ -191,7 +191,7 @@ if __name__=='__main__':
         import h5py
         
         file = h5py.File(filename, 'r')
-        signals = file["samples"]
+        signals = file["noise"]
         
         fig, ax = plt.subplots()
         
@@ -201,16 +201,15 @@ if __name__=='__main__':
 
             ax.clear()
             ax.plot(x, y)
-            ax.set_title(f"Sample Nr. {i}")
+            ax.set_title(f"Noise Nr. {i}")
         
         anim = FuncAnimation(fig, animate, frames=200, interval=100, repeat=False)
 
-        f = "samples.gif"
+        f = "noise.gif"
         writergif = PillowWriter(fps=30) 
         anim.save(f, writer=writergif)
         
         plt.show()
-    """
         
 """
     1. Create MPI stuff

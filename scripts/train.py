@@ -205,8 +205,8 @@ if __name__=='__main__':
         k = len(samplesDS)
         indices = np.arange(k)
         np.random.shuffle(indices)
-        train_indices = np.arange(0, int(k * 0.5), dtype='int')
-        validation_indices = np.arange(int(k * 0.5), k, dtype='int')
+        train_indices = np.arange(0, int(k * 0.8), dtype='int')
+        validation_indices = np.arange(int(k * 0.2), k, dtype='int')
         TrainDS = torch.utils.data.Subset(samplesDS, train_indices)
         ValidDS = torch.utils.data.Subset(samplesDS, validation_indices)
         

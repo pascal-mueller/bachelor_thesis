@@ -30,23 +30,24 @@ class NoiseGenerator:
             return self.generate_noise()
 
     def generate_noise(self):
+        print("FFFF", self.duration)
         # Create PSD for detector
-        """
         psd_length = int(0.5 * self.sample_rate * self.duration) + 1
+        psd_length = int(self.sample_rate * self.duration)
         delta_f = 1.0 / self.duration
 
-        psd_fn = pycbc.psd.analytical.aLIGOZeroDetHighPower
-        psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=18.0)
-        """
+        #psd_fn = pycbc.psd.aLIGOZeroDetHighPower
+        #psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=18.0)
 
         # Generate noise from PSD
         seed = int((time.time()* time.time() )% 200001 )
-        length = len(self.psd)
-        delta_t = 1.0 / self.sample_rate 
+        #length = len(psd)
+        #delta_t = 1.0 / self.sample_rate 
         # delta_f = 1.0 / self.duration 
         # delta_t =  1.0 / self.sample_rate
-        
-        noise = pycbc.noise.gaussian.noise_from_psd(length, delta_t, self.psd, seed).numpy()
+        delta_t = 1.0 / self.sample_rate
+        tsamples = int(self.duration / delta_t)
+        noise = pycbc.noise.gaussian.noise_from_psd(tsamples, delta_t, self.psd, seed).numpy()
         
         #idx = param['index']
         #self.dataset[idx] = noise

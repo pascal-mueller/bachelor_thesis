@@ -9,12 +9,11 @@ from src.signalGenerator import SignalGenerator
 from src.noiseGenerator import NoiseGenerator 
 
 class SingleTestDataset(torch.utils.data.Dataset):
-    def __init__(self, stride=0.1, device='cpu'):
+    def __init__(self, psd, stride=0.1, device='cpu'):
         self.sample_rate = 2048
-        self.duration = 10
+        self.psd = psd
         self.stride = stride
         self.rng = np.random.default_rng()
-        self.length = self.duration * self.sample_rate
 
         N = 5
 
@@ -25,7 +24,8 @@ class SingleTestDataset(torch.utils.data.Dataset):
         self.strain = self.get_strain()
 
     def get_noise(self):
-        noise_gen = NoiseGenerator(duration = self.duration)
+        print("GET NOISE: ", self.duration*self.sample_rate)
+        noise_gen = NoiseGenerator(self.psd, duration = self.duration)
 
         return noise_gen.generate() 
 
@@ -52,8 +52,7 @@ class SingleTestDataset(torch.utils.data.Dataset):
             # Add signal
             signals.extend(tmp)
         
-        # Add 1 second of zeros at the end. That's because the last signal
-        # is the one which the biggest SNR and somehow we get an artifact
+        # Add 1 second of zeros at the end. That's because the last signal is the one which the biggest SNR and somehow we get an artifact
         # (high signal probability) at the very end of the plot. That's probably
         # due to whitening but I'm not 100% sure. Adding 1s of zeros solves it.
         tmp = [0] * (1*self.sample_rate)
@@ -70,21 +69,16 @@ class SingleTestDataset(torch.utils.data.Dataset):
         strain = self.noise.copy()
 
         # Scale SNR and also make injection
+        print(len(self.noise), len(self.signals))
         strain = self.noise + self.signals # Actual injection
         strain = self.whiten(strain) 
         
         return strain
 
     def SNR_scale(self, signal, target_snr):
-        # Create PSD for detector
-        psd_length = int(0.5 * self.sample_rate * self.duration) + 1
-        delta_f = 1.0 / (len(signal) / 2048)
-        psd_fn = pycbc.psd.analytical.aLIGOZeroDetHighPower
-        psd = psd_fn(length=psd_length, delta_f=delta_f, low_freq_cutoff=18.0)
-        
         signal = pycbc.types.TimeSeries(signal, 
                              delta_t = 1.0 / self.sample_rate, dtype=np.float64)
-        foo = pycbc.filter.matchedfilter.sigmasq(signal, psd=psd,
+        foo = pycbc.filter.matchedfilter.sigmasq(signal, psd=self.psd,
                 low_frequency_cutoff = 18.0)
 
         network_snr = np.sqrt(foo)
