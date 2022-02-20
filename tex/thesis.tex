@@ -1,0 +1,36 @@
+\title{Bachelor Thesis}
+\author{
+        Pascal Müller [pamuelle@student.ethz.ch]
+}
+\date{\today}
+
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[parfill]{parskip}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows}
+
+\usepackage{biblatex} %Imports biblatex package
+\addbibresource{src/references.bib} %Import the bibliography file
+
+\definecolor{LightGray}{gray}{0.9}
+
+\begin{document}
+\maketitle
+
+\include{src/1_introduction}
+\include{src/2_data_generation}
+\include{src/3_deep_learning_approach}
+%\include{src/4_implementation}
+%\include{src/5_results}
+%\include{src/6_future_works}
+
+% References
+%\printbibliography %Prints bibliography
+
+\end{document}

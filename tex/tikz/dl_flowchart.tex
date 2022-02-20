@@ -1,0 +1,87 @@
+%!TEX root = ../thesis.tex
+
+% Define block styles
+\tikzstyle{decision} = [diamond, draw, fill=blue!20, 
+    text width=4.5em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=2em]
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale = 2, node distance = 2cm, auto]
+    % Background/Collection boxes
+    \node[rectangle, draw, minimum width=6cm, minimum height=4cm, fill=green!10]
+      (r) at (4.75,-2.5) {};
+    \node[rectangle, draw, minimum width=6cm, minimum height=4.5cm, fill=yellow!10]
+      (r) at (4.75,-5) {};
+    % Place nodes
+    \node [block] (init) {Start};
+    \node [block, below of=init]       (read_data)  {Read data}; 
+    \node [block, below of=read_data]  (split_data) {Split data};
+
+    \node [cloud, right of=split_data, node distance=4cm] (repeat) {200 Epochs};
+    
+    \node [block, right of=repeat, node distance=4cm] (apply_nn) {Apply NN};
+    \node [block, right of=apply_nn, node distance=3cm]   (train_loss)
+      {Training loss};
+    \node [block, below of=train_loss] (back_prop)  {Back Propagation};
+    \node [block, left of=back_prop, node distance=3cm]   (opt_step)   
+      {Optimizer step};
+    
+    \node [block, below of=opt_step, node distance=3cm] (apply_nn2) {Apply NN};
+    \node [block, right of=apply_nn2, node distance=3cm]   (valid_loss)
+      {Validation loss};
+    \node [block, below of=valid_loss] (accuracy)  {Compute accuracy};
+    \node [block, left of=accuracy, node distance=3cm]   (efficiency)   
+      {Compute efficiency};
+    
+    \node [decision, below of=efficiency] (improve) {Did NN improve?};
+    \node [block, below of=improve, node distance=3cm] (store) {Store new best weights};
+
+    %\node [block] (init) {initialize modelasd};
+    %\node [cloud, left of=init] (expert) {expert};
+    %\node [cloud, right of=init] (system) {system};
+    %\node [block, below of=init] (identify) {identify candidate models};
+    %\node [block, below of=identify] (evaluate) {evaluate candidate models};
+    %\node [block, left of=evaluate, node distance=3cm] (update) {update model};
+    %\node [decision, below of=evaluate] (decide) {is best candidate better?};
+    %\node [block, below of=decide, node distance=3cm] (stop) {stop};
+
+    % Draw edges
+    \path [line] (init)       -- (read_data);
+    \path [line] (read_data)  -- (split_data);
+    \path [line] (split_data) -- (repeat);
+    \path [line] (repeat) -- (apply_nn);
+
+    \path [line] (apply_nn)   -- (train_loss);
+    \path [line] (train_loss)  -- (back_prop);
+    \path [line] (back_prop)  -- (opt_step);
+
+    \path [line] (opt_step) -- (apply_nn2);
+    \path [line] (apply_nn2) -- (valid_loss);
+    \path [line] (valid_loss) -- (accuracy);
+    \path [line] (accuracy) -- (efficiency);
+
+    \path [line] (efficiency) -- (improve);
+    \path [line] (improve) -- node {yes} (store);
+
+    \path[line] (improve) -| node {no} (repeat);
+    \path[line] (store) -| (repeat);
+
+
+    %\path [line] (init) -- (identify);
+    %\path [line] (identify) -- (evaluate);
+    %\path [line] (evaluate) -- (decide);
+    %\path [line] (decide) -| node [near start] {yes} (update);
+    %\path [line] (update) |- (identify);
+    %\path [line] (decide) -- node {no}(stop);
+    %\path [line,dashed] (expert) -- (init);
+    %\path [line,dashed] (system) -- (init);
+    %\path [line,dashed] (system) |- (evaluate);
+\end{tikzpicture}
+\caption{Main workflow}
+\label{fig:main_workflow}
+\end{figure}
