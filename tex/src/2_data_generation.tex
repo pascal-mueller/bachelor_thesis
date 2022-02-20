@@ -1,16 +1,21 @@
 %!TEX root = ../thesis.tex
 
 \section{Data Generation}
-% Training set, validation set and test set
-In deep learning, one usually has a data set consisting of measurements. 
+% Give quick intro into what kind of data is needed for a DL approach.
+In deep learning, one basically tries to fit a mathematical model, the neural
+network, to a data set consisting of measurements. This process is called
+"learning".
 Those measurements might be data from a physical experiment, time series from
 the stock market, health information collected for mice or virtually and
-other source of data. Usually this data set
-of measurements is divided into three sets: The training set, the validation set
-and the test set. The training set is used to train the NN while the validation
-set is used to validate the learning progress. Once the NN reached a state where
-the predictions are considered to be good, we can apply the NN to our test data
-to get an unbiased evaluation of our trained NN.
+other source of data.
+
+In most cases, the data is split into three sets. The first subset is used to
+train the neural network and is called training set. Training is repeated several
+times and each iteration is called an epoch. The second subset is used to check
+the learning progress in each epoch and is called validation set. Once the NN
+reached a stated at which we think it can make good prediction we check it by
+applying it to the test set for one time. Since the test set wasn't involved in
+the learning process at all, it gives us an unbiased view.
 
 In the case of GW we only have a very limited data set of measurements. We can't
 make an experiment to generate more measurements, we can only try to detect the
@@ -23,10 +28,16 @@ Such a simulated measurement, from now on called sample, either consists of pure
 noise or a signal injected into noise. pyCBC resp. lalsuite will be used to 
 generate signals utilizing the XXX approximant. 
 
-The end goal is to be able to apply our trained NN to our test data i.e.
-detector data. This means that our test data will be continous for a given
-duration. This rises a problem: Our NN can only take in a finite and
-dimensionally fixed input. T
+% Give quick overview about how our data will look like: 1s samples for
+% training and validation but 1 month data as test data.
+In this thesis we will follow the data generation of [ml strategies] which also
+takes into account the problems stated in [29]. The samples in our training and
+validation set will be sampled at 2048 Hz with a duration of 1s i.e. each sample
+consists of 2048 32 bit values. To address the problems stated in [29], our test
+data will be 1 month of data sampled at 2048 Hz.
+
+In this thesis we will only use H1.
+
 \subsection{Training and Validation Sets}
 Since detector data
 Out NN will take an input of 1 second and a sample rate of 2048 Hz is used. 
