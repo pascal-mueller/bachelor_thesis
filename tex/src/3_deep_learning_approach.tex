@@ -19,17 +19,90 @@ For the DL approach one needs a training set and a test set. The training set
 is split whereas 80\% is used for the actual trianing of the NN and 20\% is used
 to evaluate the trained NN in each epoch. 
 
-% Provide pseudo code for main workflow
-As we can see in pseudocode X, we havet his workflow. yada yada yada
+\input{../tikz/dl_flowchart.tex}
 
-% Provide pseudo code for train()
+% Explain main workflow
+In \autoref{fig:main_workflow} the main workflow is shown. It starts by reading
+the samples and continues by making a 80/20 split. Resulting in 80\% of the
+samples being used for training and 20\% being used for validation.
 
-% Provide pseudo code for validation()
+After that we have two main blocks: The training and the validation. In case we
+improve our NN, we save the state and repeat this cycle 200 times. Each
+iteration is called an epoch.
+
+Note that in my thesis we only store the weights of the neural network. Saving
+other weights like the ones from the optimizer would enable us to continue
+training later on and thus basically letting us to add new samples. Since this
+wasn't needed, I didn't implement it.
+
+\subsection{Testing Procedure}
+% Explain current situation:
+%  - Release when 1/2month
+Current searches operate at an false alarm rate (FAR) of one per 2 month
+(CITATION NEEDED, see 26). For a new approach to be considered for production
+use, it has to meet or exceed this. While the original papers (citation needed)
+operated with false-alarm probability only, this isn't sufficient because this
+isn't a good metric when testing on a continuous data stream. This is because
+FAP assumes discrete data.
+
+FAP basically is a trehshold at which a given possible detection is considered
+a true positive while FAR is 
+
+\[
+  \text{FAR} = \frac{N_f}{T_0}
+\]
+
+whereas $N_f$ is the number of false positives and $T_0$ is the duration of the
+analyzed data. The number of false positives $N_f$ is determined by a fixed
+FAP acting as a threshold.
 
 
+%  - Original papers use FAP, not good. FAP vs. FAR/disc. vs. cont.
+%  - Mention FAR, sensitivity from paper 26
 
+% Explain FAR
+
+% Explain FAP (which is needed for FAR)
+
+% Explain sensitivity
+
+\begin{itemize}
+  \item Problem discrete data: Paper 48
+  \item Standardized metrics (FAR, sensitivity): Paper 26
+  \item Explain state of the art needs 1 in 2 months, far of 10-4 etc.
+\end{itemize}
+Paper 48 says that we can't use FAP etc.
+
+Paper 26 standardizes the metrics: FAR and sensitivity
+
+% Explain training
+\subsection{Training}
+\begin{itemize}
+  \item Fixed interval training.
+  \item Apply Network
+  \item Apply loss function
+  \item Back propagation
+  \item Optimizer step
+\end{itemize}
+
+% Explain validation
+\subsection{Validation}
+\begin{itemize}
+  \item Apply Network
+  \item Apply loss function
+  \item Compute efficiency 
+  \item Compute accuracy
+\end{itemize}
+
+\subsection{Network}
 In this thesis the neural network from \cite{schaefer2021training} is used.
 TODO: FAR like used in gabbart et al is "wrong", so use ml strategies approach.
+
+\subsection{Loss Function}
+
+\subsection{Accuracy \& Efficiency}
+
+
 
 
 

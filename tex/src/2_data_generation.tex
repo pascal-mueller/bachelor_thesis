@@ -1,6 +1,59 @@
 %!TEX root = ../thesis.tex
 
 \section{Data Generation}
+% Training set, validation set and test set
+In deep learning, one usually has a data set consisting of measurements. 
+Those measurements might be data from a physical experiment, time series from
+the stock market, health information collected for mice or virtually and
+other source of data. Usually this data set
+of measurements is divided into three sets: The training set, the validation set
+and the test set. The training set is used to train the NN while the validation
+set is used to validate the learning progress. Once the NN reached a state where
+the predictions are considered to be good, we can apply the NN to our test data
+to get an unbiased evaluation of our trained NN.
+
+In the case of GW we only have a very limited data set of measurements. We can't
+make an experiment to generate more measurements, we can only try to detect the
+ones which occure naturally. This rises the problem of needing to know how a
+gravitational wave looks like to be able to measure it. We solve this by
+numerically solving the linearized equations i.e. we simulate it. In this thesis
+, simulated gaussian noise as well as simulated signal will be used.
+
+Such a simulated measurement, from now on called sample, either consists of pure
+noise or a signal injected into noise. pyCBC resp. lalsuite will be used to 
+generate signals utilizing the XXX approximant. 
+
+The end goal is to be able to apply our trained NN to our test data i.e.
+detector data. This means that our test data will be continous for a given
+duration. This rises a problem: Our NN can only take in a finite and
+dimensionally fixed input. T
+\subsection{Training and Validation Sets}
+Since detector data
+Out NN will take an input of 1 second and a sample rate of 2048 Hz is used. 
+Each element of the training and validation set, called a sample, consists of
+either pure gaussian noise or a signal injected into noise.
+
+First 400k noise samples are generated. Secondly 200k signal samples are
+generated using parameters drawn randomly from TABLE. After that we inject the
+200k signals into 200k of the 400k noise samples. This results in a data set
+containing 200k pure noise samples as well as 200k noise+signal samples.
+
+Each signal is SNR scaled to 7. This is because the paper said that's good.
+
+
+First we generate signals. Then we generate noise. Then we inject the signals
+into the noise. We end up with samples of either pure noise or signal+noise.
+
+We shuffle the set and make a 80/20 split into training and validation set.
+
+The whole thing is whitened, signals are snr scaled to 7 cause blabla.:q
+
+
+\subsection{Test Set}
+The test set consists of 1 month of data. In this work, we use the ml challenge
+generation script with the first dataset. It has some properties yada yada yada.
+
+\subsection{Implementation}
 
 \begin{itemize}
   \item Overview: What and why do we want to generate? Very generally explain
@@ -11,4 +64,3 @@
   \item Test Data
   \item Implementation
 \end{itemize}
-
