@@ -1,7 +1,8 @@
 from torch import nn
+import torch
 
 class NeuralNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, USR = False):
         super().__init__()
         # TODO: Split network into features() and classifier() using
         # sequential module. This currently is a bit ugly.
@@ -13,12 +14,12 @@ class NeuralNetwork(nn.Module):
         # 1. Layer
         self.conv1 = nn.Conv1d(1, 8, 64)
         self.ELU1 = nn.ELU()
-        print(self.ELU1) 
+
         # 2. Layer
         self.conv2 = nn.Conv1d(8, 8, 32)
         self.maxpool1 = nn.MaxPool1d(4)
         self.ELU2 = nn.ELU()
-        print(self.ELU2)
+
         # 3. Layer
         self.conv3 = nn.Conv1d(8, 16, 32)
         self.ELU3 = nn.ELU()
@@ -51,12 +52,11 @@ class NeuralNetwork(nn.Module):
         self.ELU8 = nn.ELU()
 
         self.linear3 = nn.Linear(64, 2)
-
-        self.output= nn.Softmax(dim=1)
+        
+        self.softmax = nn.Softmax(dim=1)
+        self.USR = lambda z : z[:,0] - z[:,1]
 
     def forward(self, inputs):
-        print(self.ELU1)
-        print(self.ELU2)
         #z = self.network(inputs)
 
         # Input layer
@@ -103,11 +103,21 @@ class NeuralNetwork(nn.Module):
         z = self.ELU8(z)
 
         # Output Layer - Linear + Softmax
-        z = self.linear3(z)
-        z = self.output(z)
+        logits = self.linear3(z)
+        z_bounded = self.softmax(logits)
+        
+        # If we evaluate network, also return logits passed to USR instead of
+        # Softmax. used for efficiency. Can't use same for loss & accuracy since
+        # USR changes the labels.
+        if self.training == True:
+            return z_bounded.unsqueeze(1)
+        else:
+            z_unbounded = self.USR(logits)
+            
+            return z_bounded.unsqueeze(1), z_unbounded
 
-        return z.unsqueeze(1)
 
+"""
 def get_network():
     Network = nn.Sequential(
         nn.BatchNorm1d(1),	# 1x2048
@@ -138,3 +148,4 @@ def get_network():
     )
 
     return Network
+"""
