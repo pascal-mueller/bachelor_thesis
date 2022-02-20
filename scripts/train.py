@@ -7,7 +7,6 @@ from argparse import ArgumentParser
 from tqdm import tqdm
 
 from src.neuralNetwork import NeuralNetwork
-from src.neuralNetwork import get_network
 from src.samplesDataset import SamplesDataset
 
 from src.reg_BCELoss import reg_BCELoss
@@ -81,7 +80,7 @@ def evaluation(ValidDL, network, loss_fn):
             samples = samples.to(args.device)
 
             # Get prediction
-            labels_pred = network(samples.float())
+            labels_pred, labels_pred_USR = network(samples.float())
 
             # Fix dimension
             labels_pred = labels_pred.squeeze(1).squeeze(1)
@@ -91,11 +90,7 @@ def evaluation(ValidDL, network, loss_fn):
             
             # send to device
             labels = labels.to(args.device)
-
-            p_scores.extend(labels_pred[:,0].cpu())
-            labels_store.extend(labels[:,0].cpu())
-
-        
+            
             # Compute loss
             #loss_fn.weight = weights
             loss_batch = loss_fn(labels_pred, labels.float())
@@ -108,7 +103,12 @@ def evaluation(ValidDL, network, loss_fn):
             labels_pred[idx == True] = torch.tensor([1.0, 0.0])
             labels_pred[idx == False] = torch.tensor([0.0, 1.0])
             correct += sum(torch.eq(labels, labels_pred)[:,0])
-        
+            
+            # Store scored for efficiency computation later on.
+            p_scores.extend(labels_pred_USR.cpu())
+            labels_store.extend(labels[:,0].cpu())
+
+    print(p_scores[-100:]) 
     efficiency = compute_efficiency(p_scores, labels_store)
 
     return loss, correct, efficiency 
@@ -171,8 +171,8 @@ if __name__=='__main__':
 
     # Get model
     # TODO: Proper state saving
-    #network = NeuralNetwork().to(args.device)
-    network = get_network().to(args.device)
+    network = NeuralNetwork().to(args.device)
+    #network = get_network().to(args.device)
     
     if args.train == None and args.weights_file == None:
         print("--train set to False and no weights given.")
@@ -237,11 +237,14 @@ if __name__=='__main__':
         #optimizer = torch.optim.SGD(network.parameters(), lr=learning_rate, momentum=0.9)
         
         # Epochs
-        print("\nEpoch  |  Training Loss  |  Validation Loss    |    Accuracy ")
-        print("--------------------------------------------------------------")
+        print("\n Epoch | Training Loss | Validation Loss | Accuracy | Efficiency")
+        print("------------------------------------------------------------------")
         
         training_losses = []
         evaluation_losses = []
+        efficiencies = []
+        fig, axs = plt.subplots(1, 2)
+
         for i, t in enumerate(range(epochs)):
             # Train the NN
             training_loss = train(TrainDL, network, loss_fn, optimizer)
@@ -256,8 +259,11 @@ if __name__=='__main__':
             # Compute accuracy
             accuracy = correct / n_valid_total
 
+            # Store efficiency
+            efficiencies.append(efficiency)
+
             # Print the losses
-            info_string = "   %i   |      %.12f      |      %.30f       |     %.4f    |    %.4f     "
+            info_string = "    %i  |   %.8f  |    %.8f   |  %.4f  | %.4f   "
 
             print(info_string % (t, training_loss, evaluation_loss, accuracy, efficiency))
             
@@ -266,11 +272,15 @@ if __name__=='__main__':
                 best_loss = evaluation_loss
                 torch.save(network.state_dict(), f"../data/best_weights/{i}.pt")
                 print(f"Best weights stored in ../data/best_weights/{i}.pt")
-            
             if i % 5 == 0:
-                plt.plot(range(len(training_losses)), training_losses, "-o")
-                plt.plot(range(len(evaluation_losses)), evaluation_losses, "-o")
-                plt.savefig("losses.png")
+                # Plot losses
+                axs[0].plot(range(len(training_losses)), training_losses, "-o")
+                axs[0].plot(range(len(evaluation_losses)), evaluation_losses, "-o")
+                
+                # Plot efficiencies
+                axs[1].plot(range(len(efficiencies)), efficiencies)
+
+                fig.savefig("losses_and_efficiencies.png")
 
         print(training_losses)
         print(evaluation_losses)

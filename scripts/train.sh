@@ -1,4 +1,4 @@
-samples_file="../data/training_data/200k.hdf5"
+samples_file="../data/training_data/200k_8snr.hdf5"
 device=cuda
 
 echo "Start training the network on $device. :)"
