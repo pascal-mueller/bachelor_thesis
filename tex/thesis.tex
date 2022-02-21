@@ -11,6 +11,7 @@
 \usepackage[parfill]{parskip}
 \usepackage{amsmath}
 \usepackage{hyperref}
+\usepackage{soul}
 
 \usepackage{tikz}
 \usetikzlibrary{shapes,arrows}
@@ -19,6 +20,11 @@
 \addbibresource{src/references.bib} %Import the bibliography file
 
 \definecolor{LightGray}{gray}{0.9}
+
+\newcommand{\hlc}[2][LightGray]{{%
+    \colorlet{foo}{#1}%
+    \sethlcolor{foo}\hl{#2}}%
+}
 
 \begin{document}
 \maketitle
@@ -31,6 +37,6 @@
 %\include{src/6_future_works}
 
 % References
-%\printbibliography %Prints bibliography
+\printbibliography %Prints bibliography
 
 \end{document}

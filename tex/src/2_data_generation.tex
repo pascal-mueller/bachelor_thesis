@@ -4,74 +4,86 @@
 % Give quick intro into what kind of data is needed for a DL approach.
 In deep learning, one basically tries to fit a mathematical model, the neural
 network, to a data set consisting of measurements. This process is called
-"learning".
+\textit{learning}.
 Those measurements might be data from a physical experiment, time series from
 the stock market, health information collected for mice or virtually and
 other source of data.
 
 In most cases, the data is split into three sets. The first subset is used to
-train the neural network and is called training set. Training is repeated several
-times and each iteration is called an epoch. The second subset is used to check
-the learning progress in each epoch and is called validation set. Once the NN
-reached a stated at which we think it can make good prediction we check it by
-applying it to the test set for one time. Since the test set wasn't involved in
-the learning process at all, it gives us an unbiased view.
+train the neural network and is called \textit{training set}. The second subset 
+is used to validate the learning progress and is called \textit{validation set}.
+This process of learning and validating is repeated until we think the trained
+NN can make good predictions. In a last step we use the trained NN to make an
+unbiased prediction on the third subset, called \textit{test set}.
 
 In the case of GW we only have a very limited data set of measurements. We can't
-make an experiment to generate more measurements, we can only try to detect the
-ones which occure naturally. This rises the problem of needing to know how a
-gravitational wave looks like to be able to measure it. We solve this by
-numerically solving the linearized equations i.e. we simulate it. In this thesis
-, simulated gaussian noise as well as simulated signal will be used.
+make an experiment to easily generate more measurements, we can only try to 
+detect the ones which occure naturally. This rises the problem of needing to 
+know how a gravitational wave looks like to be able to measure it. We solve this
+by simulating GW waveforms and injecting it into Gaussian noise.
 
-Such a simulated measurement, from now on called sample, either consists of pure
-noise or a signal injected into noise. pyCBC resp. lalsuite will be used to 
-generate signals utilizing the XXX approximant. 
+\subsection{Training and Validation Set}
+% Parameters for signal
+To generate the training and validation set, we first generate 200'000 signal
+waveforms sampled at 2048 Hz with a duration on average of around several seconds.
+This is done by drawing the following parameters for each waveform.
+We use the \hlc{SEOBNRv4\_opt} approximant. The
+two masses $m_1, m_2$ are drawn uniformly between $10 \textup{M}_\odot$ and
+$50 \textup{M}_\odot$ whereas $m_1 < m_2$. The coalescence phase, inclination and
+polar angle are also drawn uniformly between $0$ and $2 \pi$. Furthermore we use
+\hlc{self.sky\_location\_dist.rvs()[0]} to compute the declination and right
+ascention. We also use a low frequency cutoff of 18 Hz.
 
-% Give quick overview about how our data will look like: 1s samples for
-% training and validation but 1 month data as test data.
-In this thesis we will follow the data generation of [ml strategies] which also
-takes into account the problems stated in [29]. The samples in our training and
-validation set will be sampled at 2048 Hz with a duration of 1s i.e. each sample
-consists of 2048 32 bit values. To address the problems stated in [29], our test
-data will be 1 month of data sampled at 2048 Hz.
+Each such waveform has a duration of several section i.e. they are not the same.
+We stated before, that we want to use 1 second i.e. not the full waveform. A
+ waveform consists of three parts: The inspiral part, the actual merger and the
+ ring down part. Since we want 1 second but have several seconds, the question
+ arises, which part of the waveform we take.
 
-In this thesis we will only use H1.
+ What we do is we cut 1.25 seconds around the merger. Doing so would lead to
+ all samples having the merger at the same place: in the middle. To make sure
+ our NN doesn't learn such information, we place the merger randomly inside this
+ 1.25s window by 0.2 seconds. This will add stability to our NN. We end up with
+ a 1.25s long sample containing the merger. We use 1.25seconds because of post
+ processing.
 
-\subsection{Training and Validation Sets}
-Since detector data
-Out NN will take an input of 1 second and a sample rate of 2048 Hz is used. 
-Each element of the training and validation set, called a sample, consists of
-either pure gaussian noise or a signal injected into noise.
-
-First 400k noise samples are generated. Secondly 200k signal samples are
-generated using parameters drawn randomly from TABLE. After that we inject the
-200k signals into 200k of the 400k noise samples. This results in a data set
-containing 200k pure noise samples as well as 200k noise+signal samples.
-
-Each signal is SNR scaled to 7. This is because the paper said that's good.
+% Parameters for noise
+Next we generate 400'00' pure gaussian noise samples, again sampled at 2048 Hz.
+The noise is generated using the \hlc{pycbc.psd.aLIGOZeroDetHighPower}
+PSD with
+a low frequency cutoff of 18 Hz. Note that to compute the value for the
+frequency delta, we use a duration of 1.25s. Because we can generate noise for
+a chosen length, we don't have to do any post processing like we did with the
+signals
 
 
-First we generate signals. Then we generate noise. Then we inject the signals
-into the noise. We end up with samples of either pure noise or signal+noise.
+% Generating samples
+At last we need to generate the actual samples used to train and validate the NN
+. This is done by injection all 200'000 signal samples into 200'000 of the
+400'000 noise samples. From [ml strategies] we see that the best training is
+done on samples with SNR of 8. This is because low SNR signals generalize while
+high SNR don't. Because of this, we rescale all signals to an SNR of 8. We then
+inject it into one of the noise samples. Once the injection is done, we whiten
+the whole sample. Whitening it reduces the duration from 1.25s to 1s. This is
+because the edges get corrupted because the math assumes infinity blabla. The
+remaining 200'000 pure noise samples are also whitened.
 
-We shuffle the set and make a 80/20 split into training and validation set.
+We end up with 400'000 samples of 1 seconds whereas half of it contains a signal
+and the other half doesn't. We call them \textit{pure noise} and 
+\textit{noise + signal}.
 
-The whole thing is whitened, signals are snr scaled to 7 cause blabla.:q
+TODO: Explain whitening
 
+\subsubsection{Implementation}
+Explain implementation
 
 \subsection{Test Set}
 The test set consists of 1 month of data. In this work, we use the ml challenge
 generation script with the first dataset. It has some properties yada yada yada.
 
-\subsection{Implementation}
+I used MLGWSC for it because there are several sets and it gave the possibility
+of making it more general. 
 
-\begin{itemize}
-  \item Overview: What and why do we want to generate? Very generally explain
-        that there is noise and signal.
-  \item SNR: Explain SNR
-  \item Properties: Describe proerties like SNR, sample rate, duration.
-  \item Training \& Evaluation Data
-  \item Test Data
-  \item Implementation
-\end{itemize}
+\subsubsection{Implementation}
+Explain implementation
+
