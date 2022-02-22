@@ -22,68 +22,114 @@ detect the ones which occure naturally. This rises the problem of needing to
 know how a gravitational wave looks like to be able to measure it. We solve this
 by simulating GW waveforms and injecting it into Gaussian noise.
 
+The data generation follows and in some cases uses code from the <ML CHALLENGE>.
+
 \subsection{Training and Validation Set}
 % Parameters for signal
-To generate the training and validation set, we first generate 200'000 signal
-waveforms sampled at 2048 Hz with a duration on average of around several seconds.
-This is done by drawing the following parameters for each waveform.
-We use the \hlc{SEOBNRv4\_opt} approximant. The
-two masses $m_1, m_2$ are drawn uniformly between $10 \textup{M}_\odot$ and
-$50 \textup{M}_\odot$ whereas $m_1 < m_2$. The coalescence phase, inclination and
-polar angle are also drawn uniformly between $0$ and $2 \pi$. Furthermore we use
-\hlc{self.sky\_location\_dist.rvs()[0]} to compute the declination and right
-ascention. We also use a low frequency cutoff of 18 Hz.
+To generate the training and validation set, we first generate $200'000$ GW signal
+waveforms sampled at 2048 Hz. The two masses $m_1$ and $m_2$ are drawn uniformly
+between $10 \textup{M}_\odot$
+and $50 \textup{M}_\odot$ whereas $m_1 < m_2$. The \textit{coalescence phase},
+\textit{inclination} and \textit{polar angle} are drawn uniformly between
+$0$ and $2 \pi$. Furthermore we use
+pyCBC's \hlc{sky\_location\_dist.rvs()} to compute the \textit{declination} and
+\textit{right ascention}. We also use a \textit{low frequency cutoff} of 18 Hz.
+We use the \hlc{SEOBNRv4\_opt} approximant to generate the waveform.
 
-Each such waveform has a duration of several section i.e. they are not the same.
-We stated before, that we want to use 1 second i.e. not the full waveform. A
- waveform consists of three parts: The inspiral part, the actual merger and the
- ring down part. Since we want 1 second but have several seconds, the question
- arises, which part of the waveform we take.
+The NN which will be used in this thesis assumes the training and validation set
+to cointain 1 second long samples yet the generated waveforms will end up having 
+a duration of several seconds. We solve this problem by choosing a 1.25 second
+window around the merger. This leads to the merger being always placed in
+the middle of the window. Since a NN is likely to learn such positional
+information, we vary the placement of the window randomly by 0.2
+seconds. This way, the mergers placement won't be fixed, adding stability to our
+NN.
 
- What we do is we cut 1.25 seconds around the merger. Doing so would lead to
- all samples having the merger at the same place: in the middle. To make sure
- our NN doesn't learn such information, we place the merger randomly inside this
- 1.25s window by 0.2 seconds. This will add stability to our NN. We end up with
- a 1.25s long sample containing the merger. We use 1.25seconds because of post
- processing.
+
+TODO: Add picture for 1 second window around merger.
 
 % Parameters for noise
-Next we generate 400'00' pure gaussian noise samples, again sampled at 2048 Hz.
-The noise is generated using the \hlc{pycbc.psd.aLIGOZeroDetHighPower}
-PSD with
-a low frequency cutoff of 18 Hz. Note that to compute the value for the
-frequency delta, we use a duration of 1.25s. Because we can generate noise for
-a chosen length, we don't have to do any post processing like we did with the
-signals
-
+Next we generate $400'000$ pure Gaussian noise samples sampled at 2048 Hz with
+a duration of 1.25 seconds.
+The noise is generated using the pyCBC's \hlc{pycbc.psd.aLIGOZeroDetHighPower}
+PSD with a low frequency cutoff of $18$ Hz.
 
 % Generating samples
 At last we need to generate the actual samples used to train and validate the NN
-. This is done by injection all 200'000 signal samples into 200'000 of the
-400'000 noise samples. From [ml strategies] we see that the best training is
-done on samples with SNR of 8. This is because low SNR signals generalize while
-high SNR don't. Because of this, we rescale all signals to an SNR of 8. We then
-inject it into one of the noise samples. Once the injection is done, we whiten
-the whole sample. Whitening it reduces the duration from 1.25s to 1s. This is
-because the edges get corrupted because the math assumes infinity blabla. The
-remaining 200'000 pure noise samples are also whitened.
+. This is done by injection all $200'000$ signal waveforms into $200'000$ of the
+$400'000$ noise samples. We end up with $200'00$ pure Gaussian noise samples
+and $200'000$ samples of signals injected into Gaussian noise.
 
-We end up with 400'000 samples of 1 seconds whereas half of it contains a signal
-and the other half doesn't. We call them \textit{pure noise} and 
-\textit{noise + signal}.
+From [ml strategies] we see that the best training is done on samples with SNR
+of 8. This is because DL algorithms can generalize low SNR signals to high SNR
+ones while the converse is not true. [ml strategies] Because of this, we rescale
+the signals to have an SNR of 8 before injecting them into the Gaussian noise.
 
-TODO: Explain whitening
+In a last step, all $400'000$ samples are whitened, leading to corrupted edges.
+We remove the corrupted edges which reduces the duration of each sample from
+1.25 second to 1 second. The reason the edges get corrupted lies in the fact
+that the algorithm used to whiten the sample assumes infinity.
+
+TODO: Explain the corrupted edges better.
+
+We end up with $400'000$ samples of 1 seconds whereas half of it contains a signal
+and the other half doesn't. We say they have the labels \textit{pure noise} and 
+\textit{noise+signal}. Those $400'000$ samples will then be split into
+training and validation set using e.g. a 80/20 split.
 
 \subsubsection{Implementation}
-Explain implementation
+Generating the above described data is implemented in the file \\
+\hlc{generate\_training\_data.py} found in the \hlc{scripts} folder. It utilizes
+the classes \hlc{SignalSpace}, \hlc{SignalGenerator}, \hlc{NoiseSpace},
+\hlc{NoiseGenerator}, \hlc{SampleSpace}, \hlc{SampleGenerator}. We can divide
+all those classes into two categories: \hlc{Spaces} and \hlc{Generators}. The
+\hlc{Spaces} provide the parameters used to generate noise, signals or samples
+and the \hlc{Generators} takes one set of parameters to generate the noise,
+signal or sample using its \hlc{generate(params)} method.
+
+The data generation is a computationally expensive task. If implemented
+sequentially\footnote{Sequentially means we execute one task after the other,
+basically running it on one core.} it can take
+up to a day or even longer, depending on the approximant used and the
+amount of data generated. To drastically reduce the time needed for data
+generation, I parallelized\footnote{Parallelization is the task of implementing
+an algorithm in a way such that it can run on several cores simultenously.
+Reducing its execution time.} it using a \textit{master-slave} approach
+implemented using MPI\footnote{resp. the Python wrapper mpi4py}. In
+this approach one core, the master, distributes a batch of work and the slaves
+execute this batch of work. Once a slave is done it asks the master for more
+work.
+
+This approach was chosen because the computational work needed differs from
+sample to sample which means that if we were to distribute all the work in the
+beginning, we wouldn't utilize the full power of all core because some might be
+idle for a long time. Furthermore this approach also made it easy to ensure that
+all work is generated from the same \hlc{Space} (i.e. distribution) which is
+important because we use several random number generators. This choice
+also gives a lot of flexibilty, which is important when working with DL.
+
+The data generation was run on ETH's Euler cluster which acts as a distributed
+system and is the reason we chose MPI instead of e.g. openMP to parallelize the
+data generation.
 
 \subsection{Test Set}
-The test set consists of 1 month of data. In this work, we use the ml challenge
-generation script with the first dataset. It has some properties yada yada yada.
+The test set consists of 1 month of data. Note that this is different to the
+training and validation set since those used samples of a duration of 1 second
+while here we basically have one samples with a duration of 1 month. This is
+needed to address the issues describes in [fapVSfar].
 
-I used MLGWSC for it because there are several sets and it gave the possibility
-of making it more general. 
+The test set is being generated by utilizing the \hlc{generate\_data.py} script
+from [ml challenge]. Note that [ml challenge] provides the possibility of
+generating test data on 4 complexity level. The first one being Guassian noise
+and simulated signals while the last one is real LIGO-Virgo data.
 
-\subsubsection{Implementation}
-Explain implementation
+The reason it was used is because it gives the possibility to easily test the
+trained NN on more complex test data. Note that in this thesis, only the simplest
+test set was used.
 
+This script will generate two datasets. One fore the so called
+\textit{foreground} data and another for the so called \textit{background} data.
+The difference is that the background data only contains the pure noise
+while the foreground has signals injected into it as described in the
+\textit{injections} file. The reason we need both those files is to compute
+the metrics later.
