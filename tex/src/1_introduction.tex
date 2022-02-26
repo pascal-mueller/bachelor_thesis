@@ -40,7 +40,7 @@ convoluting precalculated models of expected signals, so called templates, with
 the measured data generating a signal-to-noise (SNR) time series. Because the
 parameters of the expected signals are not known in advance, the template bank
 spans a large astronomical parameter space.
-Using a SNR threshold, we can extract \textit{triggers} marking possible GW 
+Using a SNR threshold, we can extract \textit{triggers} indicating possible GW 
 signals. Clustering together close triggers leads to a \textit{candidate event}.
 
 Convoluting the measured data with the whole template bank is computationally
@@ -75,8 +75,8 @@ do not distribute any event candidates with a FAR greated than 1 per month.
 
 In their pioneering works, \citeauthor{PhysRevD.97.044039} \cite{PhysRevD.97.044039}
 and \citeauthor{PhysRevLett.120.141103} \cite{PhysRevLett.120.141103} showed
-that convolutional neural networks (CNN) can be used to distinguish between
-pure noise and noise containing a GW signal. Both works use a classical binary
+that convolutional neural networks (CNN) can be used to distinguish 
+pure noise from noise containing a GW signal. Both works use a classical binary
 classification framework where they utilize the \textit{false alarm probability}
 (FAP) to compare their results to matched filtering. Applying matched filtering
 on fixed sized samples to compute the FAP and using it to compare the two
@@ -85,7 +85,7 @@ LIGO-Virgo data processing pipeline acts on a time series of arbitrary length
 resp. on a continous data stream. \cite{PhysRevD.100.063015}
 
 In this thesis, we will explore a similar deep learning (DL) approach to search,
-for simulated GW signals in simulated white gaussian noise. While training a 
+for simulated GW signals in simulated gaussian noise. While training a 
 neural network (NN) is also rather computationally expensive, the evaulation of
 a trained NN can be done in a fraction of a second. Furthermore future 
 detections can easily be incorporated leading to an improved neural network.

@@ -1,39 +1,140 @@
 %!TEX root = ../thesis.tex
 
 \section{Deep Learning Approach}
-% Introduction: High-level overview about general idea behind DL.
-% Main Workflow: Describe the main workflow (train + eval in each epoch)
-% Training: Describe training
-% Evaluation: Describe evaulation (incl. accuracy and efficiency)
+% Intro: Explain basic workflow of DL. Introduce all the little parts.
+% Explain:
+% - Loss function
+% - Optimizer (basically just stated parameters)
+% - Efficiency
+% - Accuracy
+% - Neural Network used
+% - Training strategy used
+% - USR
 
 % Quick introduction to deep learning
 Deep learning is a machine learning approach which consists of processing
-units, so called neurons, which are arranged in an array. Such an array makes up
-a layer. One to several such layers make up a neural network (NN). Each neuron
-acts like a filter extracting higher-level features from the raw input. On a 
-basic level, a neural network is trained by repeatedly applying the training
-data and comparing its results with the known labels.
+units, so called \textit{neurons}, which are arranged in an array. Such an array 
+makes up a \textit{layer}. One to several such layers make up a
+\textit{neural network} (NN). Each neuron
+acts like a filter extracting higher-level features from the raw input. (ref)
 
-% Extend on the introduction
-For the DL approach one needs a training set and a test set. The training set
-is split whereas 80\% is used for the actual trianing of the NN and 20\% is used
-to evaluate the trained NN in each epoch. 
+\autoref{fig:3_main_workflow} depicts a high level view of the deep learning approach workflow.
+It starts by reading the $200'000$ samples which were generated as described in
+Chapter 2.1. After that, we make a 80/20 split whereas 80\% will make up the
+training set and 20\% will make up the validation set.
+After that, we iterate over the training and validation set for 200 epochs. In
+each epoch we have a training section and a validation section. While they seem
+similar, they are in fact very different which will be explains later on.
+
+In a classical deep learning algorithm, you need a loss function and some
+training progress validation metrics. We use
+
+- accuracy and
+
+- efficiency.
+
+blabla which is why we first explain those.
+
 
 \input{../tikz/dl_flowchart.tex}
 
-% Explain main workflow
-In \autoref{fig:main_workflow} the main workflow is shown. It starts by reading
-the samples and continues by making a 80/20 split. Resulting in 80\% of the
-samples being used for training and 20\% being used for validation.
+\newpage
 
-After that we have two main blocks: The training and the validation. In case we
-improve our NN, we save the state and repeat this cycle 200 times. Each
-iteration is called an epoch.
+\subsection{The Neural Network}
+The neural network used in this work was taken from [ML strategies]. It consists
+of 6 convolutional layers followed by two linear layers which each include
+dropouts as regularization. While [ml strategies] randomizes the initial weights
+, this isn't done in this work because for one, we don't average any metrics and
+while working with it, it always converged fast and gave good results. I like to
+keep things simple. <Repeat arguments from ml strategies paper about why we
+chose some parameters like 2048 Hz>
 
-Note that in my thesis we only store the weights of the neural network. Saving
-other weights like the ones from the optimizer would enable us to continue
-training later on and thus basically letting us to add new samples. Since this
-wasn't needed, I didn't implement it.
+% Introduction to DL
+\begin{tabular}{ |p{5cm}||l| }
+  \hline
+  \multicolumn{2}{|c|}{Neural Network} \\
+  \hline
+  Type & Parameters \\
+  \hline
+  Batch Normalization & \\
+  Conv1d + ELU      & $C_\text{in}=1$, $C_\text{out}=8$, Kernel size = 64 \\
+  
+  Conv1d            & $C_\text{in}=8$, $C_\text{out}=8$, Kernel size = 32 \\
+  MaxPool1d + ELU   & Kernel size = 4 \\
+  
+  Conv1d + ELU      & $C_\text{in}=8$, $C_\text{out}=16$, Kernel size = 32 \\
+  
+  Conv1d            & $C_\text{in}=16$, $C_\text{out}=16$, Kernel size = 16 \\
+  MaxPool1d + ELU   & Kernel size = 3 \\
+  
+  Conv1d + ELU      & $C_\text{in}=16$, $C_\text{out}=32$, Kernel size = 16 \\
+  
+  Conv1d            & $C_\text{in}=32$, $C_\text{out}=32$, Kernel size = 16 \\
+  MaxPool1d + ELU   & Kernel size = 2 \\
+
+  Flatten           & \\
+
+  Linear            & in\_features = 1856, out\_features = 64 \\
+  Dropout + ELU     & $p=0.8$ \\
+
+  Linear            & in\_features = 64, out\_features = 64 \\
+  Dropout + ELU     & $p=0.8$ \\
+
+  Linear            & in\_features = 64, out\_features = 2 \\
+
+  Softmax and Linear           & \\
+  \hline
+\end{tabular}
+
+Note that the output layer consists of a softmax and a linear layer, which mean
+that we feed the logits from the last hidden layer to both of them and return
+two predictions. TODO: add bijective stuff.
+
+\subsection{Loss Function}
+The loss function was chosen as a varian of the binary cross-entropy that is
+designed to stay finite [ml strategies]
+
+\begin{equation}
+  L(\mathbf{y}_t, \mathbf{y}_p) = -\frac{1}{N_b} \sum_{i=1}^{N_b}
+  \mathbf{y}_{t,i} \cdot \log(\epsilon + (1 - 2\epsilon) \mathbf{y}_{p,i})
+\end{equation}
+
+whereas $\mathbf{y}_p = (1, 0)^T$ if the sample contained a signal or
+$\mathbf{y}_p = (0, 1)^T$ if the sample contained pure noise. $\mathbf{y}_p$ is
+the prediction of the network for the sample. TODO: add Nb and eps.
+
+The implementation of this loss function can be found in
+\hlc{src/reg\_BCELoss.py} and was taken from [ml strategies].
+
+\subsection{Accuracy \& Efficiency}
+
+% Explain training
+\subsection{Training}
+The training loop, implemented in the \hlc{train()} function in the file
+\hlc{train.py}, is depicted in sample code 1.
+
+\begin{itemize}
+  \item Fixed interval training.
+  \item Apply Network
+  \item Apply loss function
+  \item Back propagation
+  \item Optimizer step
+\end{itemize}
+
+% Explain validation
+\subsection{Validation}
+\begin{itemize}
+  \item Apply Network
+  \item Apply loss function
+  \item Compute efficiency 
+  \item Compute accuracy
+\end{itemize}
+
+
+
+
+
+
 
 \subsection{Testing Procedure}
 % Explain current situation:
@@ -75,34 +176,8 @@ Paper 48 says that we can't use FAP etc.
 
 Paper 26 standardizes the metrics: FAR and sensitivity
 
-% Explain training
-\subsection{Training}
+TODO:
 \begin{itemize}
-  \item Fixed interval training.
-  \item Apply Network
-  \item Apply loss function
-  \item Back propagation
-  \item Optimizer step
+  \item Improve NN table
+  \item Add references
 \end{itemize}
-
-% Explain validation
-\subsection{Validation}
-\begin{itemize}
-  \item Apply Network
-  \item Apply loss function
-  \item Compute efficiency 
-  \item Compute accuracy
-\end{itemize}
-
-\subsection{Network}
-In this thesis the neural network from \cite{schaefer2021training} is used.
-TODO: FAR like used in gabbart et al is "wrong", so use ml strategies approach.
-
-\subsection{Loss Function}
-
-\subsection{Accuracy \& Efficiency}
-
-
-
-
-
