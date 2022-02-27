@@ -1,12 +1,16 @@
-\title{Bachelor Thesis}
+\title{Gravitational Wave Detection in Gaussian Noise using Deep Learning}
 \author{
-        Pascal Müller [pamuelle@student.ethz.ch]
+        Pascal Müller [pamuelle@student.ethz.ch] \\[4cm]
+        A bachelor thesis supervised by\\[2cm]
+        Prof. Lavinia Heisenberg
 }
+
 \date{\today}
 
 \documentclass[12pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
+\usepackage{pdfpages}
 \usepackage{hyperref}
 \usepackage[parfill]{parskip}
 \usepackage{amsmath}
@@ -28,15 +32,27 @@
 }
 
 \begin{document}
-%\maketitle
+\maketitle
 
 \include{src/1_introduction}
 \include{src/2_data_generation}
 \include{src/3_deep_learning_approach}
-%\include{src/5_results}
+\include{src/5_results}
 %\include{src/6_future_works}
+
+\section{Acknowledgements}
+
+I want to thank Prof. Lavinia Heisenberg for supervising me on this thesis and 
+Prof. Steven Schramm from the University of Geneva for his consultation. I also
+want to thank Ondřej Zelenka from Friedrich-Schiller-Universität Jena and Marlin
+Schäfer from Leibniz Universität Hannover for their help in understanding their
+work. I also want to thank everyone for all the discussions we had.
+
+\newpage
 
 % References
 \printbibliography %Prints bibliography
+
+\includepdf[pages={1}]{erk.pdf}
 
 \end{document}

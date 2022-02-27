@@ -1,4 +1,4 @@
-%TEX root = ../thesis.tex
+%!TEX root = ../thesis.tex
 
 \section{Deep Learning Approach}
 % Intro: Explain basic workflow of DL. Introduce all the little parts.
@@ -16,7 +16,7 @@ Deep learning is a machine learning approach which consists of processing
 units, so called \textit{neurons}, which are arranged in an array. Such an array 
 makes up a \textit{layer}. One to several such layers make up a
 \textit{neural network} (NN). Each neuron
-acts like a filter extracting higher-level features from the raw input.
+acts like a filter extracting higher-level features from the raw input. (ref)
 
 \autoref{fig:3_main_workflow} depicts a high level view of the deep learning approach workflow.
 It starts by reading the $200'000$ samples which were generated as described in
@@ -39,7 +39,8 @@ to understand the progress our neural network makes.
 
 \subsection{The Neural Network}
 The neural network used in this work was taken from \cite{PhysRevD.105.043002}
-and is described in \autoref{table:3_neural_network}.
+and is described in
+%\autoref{table:3_neural_network}.
 It consists of 6 convolutional layers followed by two linear layers which each include
 dropouts as regularization. While \cite{PhysRevD.105.043002} randomizes the 
 initial weights, this isn't done in this work because for once, we aren't
@@ -49,45 +50,35 @@ initial weights.
 
 
 % Introduction to DL
-\begin{table}
-\begin{tabular}{ |p{5cm}||l| }
-  \hline
-  \multicolumn{2}{|c|}{Neural Network} \\
-  \hline
-  Type & Parameters \\
-  \hline
-  Batch Normalization & \\
-  Conv1d + ELU      & $C_\text{in}=1$, $C_\text{out}=8$, Kernel size = 64 \\
-
-  Conv1d            & $C_\text{in}=8$, $C_\text{out}=8$, Kernel size = 32 \\
-  MaxPool1d + ELU   & Kernel size = 4 \\
-
-  Conv1d + ELU      & $C_\text{in}=8$, $C_\text{out}=16$, Kernel size = 32 \\
-
-  Conv1d            & $C_\text{in}=16$, $C_\text{out}=16$, Kernel size = 16 \\
-  MaxPool1d + ELU   & Kernel size = 3 \\
-
-  Conv1d + ELU      & $C_\text{in}=16$, $C_\text{out}=32$, Kernel size = 16 \\
-
-  Conv1d            & $C_\text{in}=32$, $C_\text{out}=32$, Kernel size = 16 \\
-  MaxPool1d + ELU   & Kernel size = 2 \\
-
-  Flatten           & \\
-
-  Linear            & in\_features = 1856, out\_features = 64 \\
-  Dropout + ELU     & $p=0.8$ \\
-
-  Linear            & in\_features = 64, out\_features = 64 \\
-  Dropout + ELU     & $p=0.8$ \\
-
-  Linear            & in\_features = 64, out\_features = 2 \\
-
-  Softmax and Linear           & \\
-  \hline
+% Please add the following required packages to your document preamble:
+% \usepackage[table,xcdraw]{xcolor}
+% If you use beamer only pass "xcolor=table" option, i.e. \documentclass[xcolor=table]{beamer}
+\begin{table}[]
+\begin{tabular}{|>{\columncolor[HTML]{DAE8FC}}c |ccc|}
+\hline
+Layer Type                                                    & \multicolumn{3}{c|}{\cellcolor[HTML]{DAE8FC}Parameter}                                                                                                         \\ \hline
+                                                              & \multicolumn{1}{c|}{\cellcolor[HTML]{DAE8FC}$C_\text{in}$} & \multicolumn{1}{c|}{\cellcolor[HTML]{DAE8FC}$C_\text{out}$} & \cellcolor[HTML]{DAE8FC}Kernel Size \\ \hline
+Batch Normalization                                           & \multicolumn{1}{l|}{}                                      & \multicolumn{1}{l|}{}                                       & \multicolumn{1}{l|}{}               \\ \hline
+Conv1d + ELU                                                  & \multicolumn{1}{c|}{1}                                     & \multicolumn{1}{c|}{8}                                      & 64                                  \\ \hline
+Conv1d                                                        & \multicolumn{1}{c|}{8}                                     & \multicolumn{1}{c|}{8}                                      & 32                                  \\ \hline
+Maxpool1d + ELU                                               & \multicolumn{1}{c|}{}                                      & \multicolumn{1}{c|}{}                                       & 4                                   \\ \hline
+Conv1d + ELU                                                  & \multicolumn{1}{c|}{8}                                     & \multicolumn{1}{c|}{16}                                     & 32                                  \\ \hline
+Conv1d                                                        & \multicolumn{1}{c|}{16}                                    & \multicolumn{1}{c|}{16}                                     & 16                                  \\ \hline
+Maxpool1d + ELU                                               & \multicolumn{1}{c|}{}                                      & \multicolumn{1}{c|}{}                                       & 3                                   \\ \hline
+Conv1d + ELU                                                  & \multicolumn{1}{c|}{16}                                    & \multicolumn{1}{c|}{32}                                     & 16                                  \\ \hline
+Conv1d                                                        & \multicolumn{1}{c|}{32}                                    & \multicolumn{1}{c|}{32}                                     & 16                                  \\ \hline
+Maxpool1d + ELU                                               & \multicolumn{1}{c|}{}                                      & \multicolumn{1}{c|}{}                                       & 2                                   \\ \hline
+Flatten                                                       & \multicolumn{1}{l|}{}                                      & \multicolumn{1}{l|}{}                                       & \multicolumn{1}{l|}{}               \\ \hline
+                                                              & \multicolumn{1}{c|}{\cellcolor[HTML]{DAE8FC}in\_features}  & \multicolumn{1}{c|}{\cellcolor[HTML]{DAE8FC}out\_features}  & \cellcolor[HTML]{DAE8FC}p           \\ \hline
+Linear                                                        & \multicolumn{1}{c|}{1856}                                  & \multicolumn{1}{c|}{64}                                     &                                     \\ \hline
+Dropout + ELU                                                 & \multicolumn{1}{c|}{}                                      & \multicolumn{1}{c|}{}                                       & 0.8                                 \\ \hline
+Linear                                                        & \multicolumn{1}{c|}{64}                                    & \multicolumn{1}{c|}{64}                                     &                                     \\ \hline
+\multicolumn{1}{|l|}{\cellcolor[HTML]{DAE8FC}Dropout + ELU}   & \multicolumn{1}{l|}{}                                      & \multicolumn{1}{l|}{}                                       & 0.8                                 \\ \hline
+\multicolumn{1}{|l|}{\cellcolor[HTML]{DAE8FC}Softmax and USR} & \multicolumn{1}{c|}{64}                                    & \multicolumn{1}{c|}{2}                                      &                                     \\ \hline
+\multicolumn{1}{|l|}{\cellcolor[HTML]{DAE8FC}}                & \multicolumn{1}{l|}{}                                      & \multicolumn{1}{l|}{}                                       & \multicolumn{1}{l|}{}               \\ \hline
 \end{tabular}
-\caption{The neural network.}
-\label{table:3_neural_network}
 \end{table}
+
 
 Note that the output layer consists of a softmax and a linear layer called USR,
 which mean that we feed the logits\footnote{The raw output of a layer is called
@@ -96,7 +87,7 @@ and return two predictions. The reason we return both is for simplicity only. We
 never use both simultaneously.
 
 A softmax layer fullfils the mathematical properties of a probability, which is
-why we call its output \textit{p-score}. Note that the p-score does not represent
+why we call its output \textit{pscore}. Note that the pscore does not represent
 a statistical significant value but only tells us how confident the network is,
 that the sample contains a signal. \cite{PhysRevD.100.063015}
 
@@ -211,3 +202,17 @@ $\text{V}(d_{\text{max}})$ describes the volume of a sphere and $N_i$ are the
 total number of injections. $N_t$ is the number of true positives at a given
 FAR.
 
+\begin{itemize}
+  \item Problem discrete data: Paper 48
+  \item Standardized metrics (FAR, sensitivity): Paper 26
+  \item Explain state of the art needs 1 in 2 months, far of 10-4 etc.
+\end{itemize}
+Paper 48 says that we can't use FAP etc.
+
+Paper 26 standardizes the metrics: FAR and sensitivity
+
+TODO:
+\begin{itemize}
+  \item Improve NN table
+  \item Add references
+\end{itemize}

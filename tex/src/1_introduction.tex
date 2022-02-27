@@ -1,13 +1,5 @@
 %!TEX root = ../thesis.tex
 
-% TODO:
-% 1. Improve quality.
-% 2. Make sure we have a reference for everything. (e.g. add einstein paper)
-% 3. Finish the "organized" part at the end.
-% 4. Improve quality of Figure 1.
-% 5. Maybe add that this is the basic for a project where new physics should
-%    be found like e.g. NS eq. of state blabla.
-
 \section{Introduction}
 % Introduction to the general topic of GW
 In 1916, Einstein predicted the existence of gravitational waves (GW). Nearly
@@ -63,10 +55,11 @@ processing. The detectors are highly sensitive which makes them prone to
 different noise sources. One observed phenomenon are so called glitches which
 can mimic true transient astrophysical signals \cite{2020CQGra..37e5002A}.
 After a quality control, the data is being searched for GW signals and in case
-a signal is found, called an candidate event, the parameters are being estimated.
+a signal is found i.e. an candidate event, the parameters are being estimated.
 
 Each candidate event gets a statistical significance assigned, which is given by the 
-false-alarm rate (FAR) of the search. The FAR is basically telling us how many false positives
+\textit{false-alarm rate} (FAR) of the search.\cite{2020CQGra..37e5002A} The FAR is
+basically telling us how many \textit{false positives}
 occured over the duration of the analyzed data. To count the amount of
 false positives, we use the ranking statistic, given by the maximal SNR
 of the considered candidate event, as the threshold. Current low-latency searches
@@ -75,7 +68,7 @@ do not distribute any event candidates with a FAR greated than 1 per month.
 
 In their pioneering works, \citeauthor{PhysRevD.97.044039} \cite{PhysRevD.97.044039}
 and \citeauthor{PhysRevLett.120.141103} \cite{PhysRevLett.120.141103} showed
-that convolutional neural networks (CNN) can be used to distinguish 
+that \textit{convolutional neural networks} (CNN) can be used to distinguish 
 pure noise from noise containing a GW signal. Both works use a classical binary
 classification framework where they utilize the \textit{false alarm probability}
 (FAP) to compare their results to matched filtering. Applying matched filtering
@@ -83,26 +76,18 @@ on fixed sized samples to compute the FAP and using it to compare the two
 approaches is problematic because the matched filtering approach used in the 
 LIGO-Virgo data processing pipeline acts on a time series of arbitrary length
 resp. on a continous data stream. \cite{PhysRevD.100.063015}
+While training a neural network (NN) is also rather computationally expensive, the
+evaulation of a trained NN can be done in a fraction of a second. Being able
+to easily continue the training of the NN on new detections might proof to
+be another advantage.
 
-In this thesis, we will explore a similar deep learning (DL) approach to search,
-for simulated GW signals in simulated gaussian noise. While training a 
-neural network (NN) is also rather computationally expensive, the evaulation of
-a trained NN can be done in a fraction of a second. Furthermore future 
-detections can easily be incorporated leading to an improved neural network.
+In this thesis, we will use a similar \textit{deep learning} (DL) approach to search
+for simulated GW signals injected in simulated gaussian noise. While working on
+this thesis, a heavy focus was put on exploring the space of analyzing GW using
+DL approaches. This lead to a rather general approach in the codebase which
+should make it easily extenable.
 
 This thesis is organized as follows. In Section 2 we first establish the data
-used for our DL approach, so we know what we actually work with. In section 3 
-we will describe the actual DL approach. In section 4, we present the results.
-In section 5 we discuss possibilities for future work.
-
-TODO: 
-\begin{itemize}
-  \item Figure 1: Better quality needed
-  \item Text: Quality control
-  \item Do I need to add a paragraph about the "openness" of the thesis?
-  \item Do I need to comment about the generalilty of the code?
-  \item "This thessi is the basis of a project"?
-\end{itemize}
-
-
-
+used for our DL approach and how it is being generated. In section 3 
+we will describe the actual DL approach as well as its implementation.
+In section 4 results are being discussed.
