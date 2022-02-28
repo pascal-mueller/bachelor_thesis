@@ -30,7 +30,6 @@ class NoiseGenerator:
             return self.generate_noise()
 
     def generate_noise(self):
-        print("FFFF", self.duration)
         # Create PSD for detector
         psd_length = int(0.5 * self.sample_rate * self.duration) + 1
         psd_length = int(self.sample_rate * self.duration)

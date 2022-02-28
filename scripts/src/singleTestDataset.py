@@ -7,24 +7,29 @@ import matplotlib.pyplot as plt
 from src.signalSpace import SignalSpace
 from src.signalGenerator import SignalGenerator
 from src.noiseGenerator import NoiseGenerator 
+from src.whiten import whiten
 
 class SingleTestDataset(torch.utils.data.Dataset):
     def __init__(self, psd, stride=0.1, device='cpu'):
         self.sample_rate = 2048
-        self.psd = psd
         self.stride = stride
         self.rng = np.random.default_rng()
+        self.psd = psd
 
         N = 5
+        
+        self.xtop = []
 
         self.target_snrs = np.linspace(5.0, 30.0, N)
         self.signals = self.get_signals(N)
-        self.duration = int(len(self.signals) / 2048)
+        self.duration = len(self.signals) / 2048
         self.noise = self.get_noise()
         self.strain = self.get_strain()
 
+
+
     def get_noise(self):
-        print("GET NOISE: ", self.duration*self.sample_rate)
+        print("GET NOISE: ", self.duration)
         noise_gen = NoiseGenerator(self.psd, duration = self.duration)
 
         return noise_gen.generate() 
@@ -35,6 +40,8 @@ class SingleTestDataset(torch.utils.data.Dataset):
         signal_gen = SignalGenerator()
 
         signals = [0] * (self.sample_rate * 4) # 4 seconds
+
+        self.xtop.append(2*len(signals))
 
         padding = 3 # seconds
         for i, signal_params in enumerate(signal_space):
@@ -49,14 +56,22 @@ class SingleTestDataset(torch.utils.data.Dataset):
             tmp = [0] * ((k + 3) * self.sample_rate)
             
             tmp[0 : len(signal)] = signal
+
+            self.xtop[-1] = self.xtop[-1] + signal.numpy().argmax()
+            self.xtop.append(self.xtop[-1] + len(signal) + len(tmp))
             # Add signal
             signals.extend(tmp)
+
         
         # Add 1 second of zeros at the end. That's because the last signal is the one which the biggest SNR and somehow we get an artifact
         # (high signal probability) at the very end of the plot. That's probably
         # due to whitening but I'm not 100% sure. Adding 1s of zeros solves it.
         tmp = [0] * (1*self.sample_rate)
         signals.extend(tmp)
+
+        # Add zeros cause whitening alter on
+        tmp = [0] * int(self.sample_rate * 0.125)
+        signals = tmp + signals + tmp
 
         return signals
     
@@ -67,11 +82,9 @@ class SingleTestDataset(torch.utils.data.Dataset):
         k_inj = int(0.5 * (n_noise - n_signal))
 
         strain = self.noise.copy()
-
         # Scale SNR and also make injection
-        print(len(self.noise), len(self.signals))
         strain = self.noise + self.signals # Actual injection
-        strain = self.whiten(strain) 
+        strain = whiten(strain, low_frequency_cutoff=18, psd=self.psd)
         
         return strain
 
@@ -99,7 +112,7 @@ class SingleTestDataset(torch.utils.data.Dataset):
         plt.show()
         """
         #return sample
-    
+    """
     def whiten(self, strain):
         # Whiten
         strain = pycbc.types.TimeSeries(strain, delta_t = 1.0 / self.sample_rate)
@@ -114,7 +127,7 @@ class SingleTestDataset(torch.utils.data.Dataset):
                 low_frequency_cutoff = 18.0)
 
         return strain.numpy()
-
+    """
     def plot(self, probabilities=[]):
         # "time"
         t = range(len(self.strain))
@@ -123,32 +136,68 @@ class SingleTestDataset(torch.utils.data.Dataset):
             fig, axs = plt.subplots(2, 1)
         else:
             fig, axs = plt.subplots(3, 1)
-
         
+        fig.subplots_adjust(hspace=0)
+        
+        # Time axis
+        x = np.arange(0,len(t)+1, 2048)
+        x_labels = np.arange(len(x))
+        
+        k = int(self.sample_rate * 0.125) 
         # Plot noise with signal overlayed
-        axs[0].plot(t, self.noise)
-        axs[0].plot(t, self.signals)
-        axs[0].set_title("Pure noise with signal overlayed")
-        axs[0].set_xticks(np.arange(0,len(t)+1, 2048))
-        axs[0].set_xticklabels(np.arange(0,len(t)+1, 2048), rotation=45)
+        axs[0].plot(t, self.noise[k:-k])
+        axs[0].plot(t, self.signals[k:-k])
+        import matplotlib.ticker as mtick
+        axs[0].yaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
+        axs[0].set_title("SNR")
+        axs[0].yaxis.set_label_position("right")
+        axs[0].set_ylabel("Strain")
+        axs[0].set_xticks(x)
+        axs[0].set_xticklabels(x_labels)
+        ax_top = axs[0].twiny()
+        ax_top.tick_params(
+            axis='x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom=False,      # ticks along the bottom edge are off
+            top=False,         # ticks along the top edge are off
+            labelbottom=False) # labels along the bottom edge are off
+        
+        ind = np.array(self.signals).argsort()[-5:]
+        ind = ind / len(self.signals)
+
+        self.xtop = np.array(self.xtop) / len(self.signals) 
+        print(self.xtop)
+        #x_top = np.arange(len(self.signals)) / 2048
+        ax_top.set_xlim(0, 1.0)
+        ax_top.set_xticks([0.17, 0.35, 0.5, 0.65, 0.78])
+        #ax_top.set_xticks(self.xtop[0:5])
+        ax_top.set_xticklabels([5.0, 11.25, 17.5, 23.75, 30.0])
+
+        #print(np.array(self.signals)[ind])
 
         # Plot strain (noise + signal)
         axs[1].plot(t, self.strain)
-        axs[1].set_title("SNR scaled & whitened strain (Noise + signal)")
-        axs[0].set_xticks(np.arange(0,len(t)+1, 2048))
-        axs[0].set_xticklabels(np.arange(0,len(t)+1, 2048), rotation=45)
+        axs[1].yaxis.set_label_position("right")
+        axs[1].set_ylabel("Strain")
+        #axs[1].set_title("SNR scaled & whitened strain (Noise + signal)")
+        axs[0].set_xticks(x)
+        axs[0].set_xticklabels(x_labels)
 
         if len(probabilities) > 0:
             axs[2].plot(t, probabilities)
-            axs[2].set_title("Probability signal")
-            axs[2].set_xticks(np.arange(0,len(t)+1, 2048))
-            axs[2].set_xticklabels(np.arange(0,len(t)+1, 2048), rotation=45)
-        
+            #axs[2].set_title("Probability signal")
+            axs[2].set_ylabel("p-score")
+            axs[2].yaxis.set_label_position("right")
+            axs[2].set_xticks(x)
+            axs[2].set_xticklabels(x_labels, rotation=45)
+            axs[2].set_xlabel("Time [s]")
+
         print("Plotting...")
+        plt.savefig("apply_single.png")
         plt.show()
 
     def __len__(self):
-        length = ( self.duration - 1 ) / self.stride + 1
+        length = ( self.duration - 1 ) / self.stride - 1
 
         return int(length)
 

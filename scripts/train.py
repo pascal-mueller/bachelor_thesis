@@ -66,7 +66,8 @@ def evaluation(ValidDL, network, loss_fn):
     # Variables
     loss = 0.0
     
-    p_scores = []
+    p_scores_USR = []
+    p_scores_softmax = []
     labels_store = []
 
     correct = 0
@@ -105,13 +106,14 @@ def evaluation(ValidDL, network, loss_fn):
             correct += sum(torch.eq(labels, labels_pred)[:,0])
             
             # Store scored for efficiency computation later on.
-            p_scores.extend(labels_pred_USR.cpu())
+            p_scores_USR.extend(labels_pred_USR.cpu())
+            p_scores_softmax.extend(labels_pred.cpu()[:,0])
             labels_store.extend(labels[:,0].cpu())
 
-    print(p_scores[-100:]) 
-    efficiency = compute_efficiency(p_scores, labels_store)
+    efficiency_USR = compute_efficiency(p_scores_USR, labels_store)
+    efficiency_softmax = compute_efficiency(p_scores_softmax, labels_store)
 
-    return loss, correct, efficiency 
+    return loss, correct, efficiency_USR, efficiency_softmax 
 
 def compute_efficiency(p_scores, labels, FAP=0.0001):
     # 1. Sort p-scores, largest first.
@@ -237,12 +239,13 @@ if __name__=='__main__':
         #optimizer = torch.optim.SGD(network.parameters(), lr=learning_rate, momentum=0.9)
         
         # Epochs
-        print("\n Epoch | Training Loss | Validation Loss | Accuracy | Efficiency")
-        print("------------------------------------------------------------------")
+        print("\n Epoch | Training Loss | Validation Loss | Accuracy | Efficiency USR")
+        print("----------------------------------------------------------------------")
         
         training_losses = []
         evaluation_losses = []
-        efficiencies = []
+        efficiencies_USR = []
+        efficiencies_softmax = []
         fig, axs = plt.subplots(1, 2)
 
         for i, t in enumerate(range(epochs)):
@@ -252,7 +255,7 @@ if __name__=='__main__':
             training_losses.append(training_loss)
 
             # Validate on unseen data
-            evaluation_loss, correct, efficiency = evaluation(ValidDL, network, loss_fn)
+            evaluation_loss, correct, efficiency_USR, efficiency_softmax = evaluation(ValidDL, network, loss_fn)
             evaluation_loss /= n_valid
             evaluation_losses.append(evaluation_loss)
             
@@ -260,12 +263,13 @@ if __name__=='__main__':
             accuracy = correct / n_valid_total
 
             # Store efficiency
-            efficiencies.append(efficiency)
+            efficiencies_USR.append(efficiency_USR)
+            efficiencies_softmax.append(efficiency_softmax)
 
             # Print the losses
             info_string = "    %i  |   %.8f  |    %.8f   |  %.4f  | %.4f   "
 
-            print(info_string % (t, training_loss, evaluation_loss, accuracy, efficiency))
+            print(info_string % (t, training_loss, evaluation_loss, accuracy, efficiency_USR))
             
             # Store weights
             if evaluation_loss < best_loss:
@@ -278,13 +282,34 @@ if __name__=='__main__':
                 axs[0].plot(range(len(evaluation_losses)), evaluation_losses, "-o")
                 
                 # Plot efficiencies
-                axs[1].plot(range(len(efficiencies)), efficiencies)
+                axs[1].plot(range(len(efficiencies_USR)), efficiencies_USR)
+                axs[1].plot(range(len(efficiencies_softmax)), efficiencies_softmax)
 
                 fig.savefig("losses_and_efficiencies.png")
+        
+                with open("efficiencies_softmax.csv", "w") as f_eff:
+                   for item in efficiencies_softmax:
+                       f_eff.write(str(item) + "\n")
 
         print(training_losses)
         print(evaluation_losses)
 
+        print("Storing losses and efficiencies.")
+        with open("training_losses.csv", "w") as f_train:
+            for item in training_losses:
+                f_train.write(str(item) + "\n")
+
+        with open("validation_losses.csv", "w") as f_valid:
+            for item in evaluation_losses:
+                f_valid.write(str(item) + "\n")
+
+        with open("efficiencies_USR.csv", "w") as f_eff:
+            for item in efficiencies_USR:
+                f_eff.write(str(item) + "\n")
+
+        with open("efficiencies_softmax.csv", "w") as f_eff:
+            for item in efficiencies_softmax:
+                f_eff.write(str(item) + "\n")
 
         plt.plot(range(len(training_losses)), training_losses, "-o")
         plt.plot(range(len(evaluation_losses)), evaluation_losses, "-o")

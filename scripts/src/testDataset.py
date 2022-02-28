@@ -1,4 +1,5 @@
 import h5py
+import pycbc
 import numpy as np
 import torch
 
@@ -23,9 +24,22 @@ class TestDataset(torch.utils.data.Dataset):
         
         # Read actual datasets
         total = 0
-        for key in self.dataset_keys:
+        for i, key in enumerate(self.dataset_keys):
+            # Read dataset i.e. segment
             dataset = self.file[detector][key]
             self.datasets.append(dataset)
+
+            # Whiten dataset
+            """
+            print(f"Whitening dataset {i}")
+            dataset = pycbc.types.TimeSeries(dataset, delta_t = 1.0 / self.sample_rate)
+            dataset = dataset.whiten(0.5, 0.25, remove_corrupted = True,
+                    low_frequency_cutoff = 18.0)
+            dataset = dataset.numpy()
+
+            # Store whitenset
+            self.datasets.append(dataset)
+            """
 
             # Set start times
             self.start_times.append(float(key))
@@ -47,6 +61,8 @@ class TestDataset(torch.utils.data.Dataset):
     
     # TODO: If we have a stride of 0.1 then we get 2048*0.1 = 204.8 but we need
     # an integer. So currently we have some left over that at the end. Fix that.
+    # => This should be fixed.
+
     # Always returns 1s of data
     def __getitem__(self, i):
         # To get the i-th sample, we first have to determine in which dataset
@@ -59,7 +75,8 @@ class TestDataset(torch.utils.data.Dataset):
                 # local i (i.e. the i-th element in the j-th dataset)
                 i_loc = i - sum(self.dataset_lengths[0:j])
 
-                start = int(np.ceil(i_loc*self.step))
+                #start = int(np.ceil(i_loc*self.step))
+                start = i_loc * 204
                 end = start + 2048
 
                 item = self.datasets[j][start : end]
@@ -68,7 +85,14 @@ class TestDataset(torch.utils.data.Dataset):
                 # usually isn't at the start but the time currently is the
                 # start time of the current item 
                 start_time = self.start_times[j] # dataset keys are start time
-                time = start_time + i*self.stride
+
+                #TODO:Compute dt correctly
+
+                dt = (1.0 / self.sample_rate) * 204
+
+                time = start_time + i*dt + 0.5 # 0.5 cause merger is on avg there.
+
+
                 return time, item 
 
 

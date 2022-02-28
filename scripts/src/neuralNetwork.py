@@ -2,15 +2,14 @@ from torch import nn
 import torch
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, USR = False):
+    def __init__(self): 
         super().__init__()
-        # TODO: Split network into features() and classifier() using
-        # sequential module. This currently is a bit ugly.
+        # TODO: Split network into features() and classifier() using sequential module. This currently is a bit ugly.
         #self.network = get_network(path_to_weights)
-        
+
         # Input Layer
         self.normalizeInput = nn.BatchNorm1d(1)
-        
+
         # 1. Layer
         self.conv1 = nn.Conv1d(1, 8, 64)
         self.ELU1 = nn.ELU()
@@ -109,11 +108,14 @@ class NeuralNetwork(nn.Module):
         # If we evaluate network, also return logits passed to USR instead of
         # Softmax. used for efficiency. Can't use same for loss & accuracy since
         # USR changes the labels.
+        torch.set_printoptions(precision=64)
+        #return z_bounded.unsqueeze(1), self.USR(logits)
+
         if self.training == True:
             return z_bounded.unsqueeze(1)
         else:
             z_unbounded = self.USR(logits)
-            
+      
             return z_bounded.unsqueeze(1), z_unbounded
 
 
