@@ -8,3 +8,6 @@ The goal of this thesis was to explore the space of gravitational wave analysis 
 - `MatchedFilter_ext` & `matchedFilter`: Contains implementations of matched filtering.
 - `scripts`: Contains all the scripts used to define and train the network, generate data and evaluate the results..
 - `tex`: Contains the source for the actual written thesis.
+
+# Status
+This thesis is in review.
