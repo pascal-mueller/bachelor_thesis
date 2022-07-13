@@ -10,4 +10,4 @@ The goal of this thesis was to explore the space of gravitational wave analysis 
 - `tex`: Contains the source for the actual written thesis.
 
 # Status
-This thesis is in review.
+This thesis was graded with 6.0
